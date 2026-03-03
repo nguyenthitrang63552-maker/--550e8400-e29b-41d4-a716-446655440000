@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.DExperimentInfoMapper">
+    
+    <resultMap type="DExperimentInfo" id="DExperimentInfoResult">
+        <result property="experimentId"    column="experiment_id"    />
+        <result property="targetId"    column="target_id"    />
+        <result property="experimentName"    column="experiment_name"    />
+        <result property="targetType"    column="target_type"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="projectName"    column="project_name"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="location"    column="location"    />
+        <result property="platformConfig"    column="platform_config"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="contentDesc"    column="content_desc"    />
+        <result property="path" column="path" />
+    </resultMap>
+
+    <sql id="selectDExperimentInfoVo">
+        select e.experiment_id, e.target_id, e.experiment_name, e.project_id, e.start_time, e.location, e.platform_config, e.create_by, e.create_time, e.update_time, e.content_desc,e.path, t.target_type from SYSTEM_COLLABORATION_TEST.d_experiment_info e
+        left join SYSTEM_COLLABORATION_TEST.d_target_info t on e.target_id = t.target_id
+    </sql>
+
+    <select id="selectDExperimentInfoList" parameterType="DExperimentInfo" resultMap="DExperimentInfoResult">
+        select e.experiment_id, e.target_id, e.experiment_name, e.project_id, e.start_time, e.location, e.platform_config, e.create_by, e.create_time, e.update_time, e.content_desc,e.path, d.project_name, t.target_type from SYSTEM_COLLABORATION_TEST.d_experiment_info e
+        left join SYSTEM_COLLABORATION_TEST.d_project_info d on e.project_id = d.project_id left join SYSTEM_COLLABORATION_TEST.D_TARGET_INFO t on e.target_id = t.target_id
+        <where>
+            <if test="experimentId != null  and experimentId != ''"> and e.experiment_id = #{experimentId}</if>
+            <if test="experimentName != null  and experimentName != ''"> and e.experiment_name like concat('%', #{experimentName}, '%')</if>
+            <if test="projectId != null"> and e.project_id = #{projectId}</if>
+            <if test="createBy != null and createBy != ''"> and e.create_by like concat('%', #{createBy}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(e.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(e.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+
+        </where>
+    </select>
+    
+    <select id="selectDExperimentInfoByExperimentId" parameterType="String" resultMap="DExperimentInfoResult">
+        <include refid="selectDExperimentInfoVo"/>
+        where e.experiment_id = #{experimentId}
+    </select>
+
+    <insert id="insertDExperimentInfo" parameterType="DExperimentInfo">
+        insert into SYSTEM_COLLABORATION_TEST.d_experiment_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="experimentId != null">experiment_id,</if>
+            <if test="targetId != null and targetId != ''">target_id,</if>
+            <if test="experimentName != null and experimentName != ''">experiment_name,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="location != null">location,</if>
+            <if test="platformConfig != null">platform_config,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="contentDesc != null">content_desc,</if>
+            <if test="path != null">path,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="experimentId != null">#{experimentId},</if>
+            <if test="targetId != null and targetId != ''">#{targetId},</if>
+            <if test="experimentName != null and experimentName != ''">#{experimentName},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="location != null">#{location},</if>
+            <if test="platformConfig != null">#{platformConfig},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="contentDesc != null">#{contentDesc},</if>
+            <if test="path != null">#{path},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDExperimentInfo" parameterType="DExperimentInfo">
+        update SYSTEM_COLLABORATION_TEST.d_experiment_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="targetId != null and targetId != ''">target_id = #{targetId},</if>
+            <if test="experimentName != null and experimentName != ''">experiment_name = #{experimentName},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="platformConfig != null">platform_config = #{platformConfig},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="contentDesc != null">content_desc = #{contentDesc},</if>
+            <if test="path != null">path = #{path},</if>
+        </trim>
+        where experiment_id = #{experimentId}
+    </update>
+
+    <delete id="deleteDExperimentInfoByExperimentId" parameterType="String">
+        delete from SYSTEM_COLLABORATION_TEST.d_experiment_info where experiment_id = #{experimentId}
+    </delete>
+
+    <delete id="deleteDExperimentInfoByExperimentIds" parameterType="String">
+        delete from SYSTEM_COLLABORATION_TEST.d_experiment_info where experiment_id in
+        <foreach item="experimentId" collection="array" open="(" separator="," close=")">
+            #{experimentId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.DProjectInfoMapper">
+
+    <resultMap type="DProjectInfo" id="DProjectInfoResult">
+        <result property="projectId"    column="project_id"    />
+        <result property="projectName"    column="project_name"    />
+        <result property="projectContentDesc"    column="project_content_desc"    />
+        <result property="createBy" column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="path"    column="path"    />
+    </resultMap>
+
+    <sql id="selectDProjectInfoVo">
+        select project_id, project_name, project_content_desc, create_by, create_time, update_time, path from SYSTEM_COLLABORATION_TEST.d_project_info
+    </sql>
+
+    <select id="selectDProjectInfoList" parameterType="DProjectInfo" resultMap="DProjectInfoResult">
+        <include refid="selectDProjectInfoVo"/>
+        <where>
+            <if test="projectId != null"> and project_id = #{projectId}</if>
+            <if test="projectName != null  and projectName != ''"> and project_name like concat('%', #{projectName}, '%')</if>
+            <if test="createBy != null and createBy != ''"> and create_by like concat('%', #{createBy}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectDProjectInfoByProjectId" parameterType="Long" resultMap="DProjectInfoResult">
+        <include refid="selectDProjectInfoVo"/>
+        where project_id = #{projectId}
+    </select>
+    <select id="selectAllDProjectInfo" resultMap="DProjectInfoResult">
+        <include refid="selectDProjectInfoVo"/>
+    </select>
+
+    <insert id="insertDProjectInfo" parameterType="DProjectInfo">
+        insert into SYSTEM_COLLABORATION_TEST.d_project_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="projectName != null and projectName != ''">project_name,</if>
+            <if test="projectContentDesc != null">project_content_desc,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="path != null">path,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="projectName != null and projectName != ''">#{projectName},</if>
+            <if test="projectContentDesc != null">#{projectContentDesc},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="path != null">#{path},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDProjectInfo" parameterType="DProjectInfo">
+        update SYSTEM_COLLABORATION_TEST.d_project_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectName != null and projectName != ''">project_name = #{projectName},</if>
+            <if test="projectContentDesc != null">project_content_desc = #{projectContentDesc},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="path != null">path = #{path},</if>
+        </trim>
+        where project_id = #{projectId}
+    </update>
+
+    <delete id="deleteDProjectInfoByProjectId" parameterType="Long">
+        delete from SYSTEM_COLLABORATION_TEST.d_project_info where project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteDProjectInfoByProjectIds" parameterType="String">
+        delete from SYSTEM_COLLABORATION_TEST.d_project_info where project_id in
+        <foreach item="projectId" collection="array" open="(" separator="," close=")">
+            #{projectId}
+        </foreach>
+    </delete>
+</mapper>

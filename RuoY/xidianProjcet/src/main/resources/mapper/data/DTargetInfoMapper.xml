@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.DTargetInfoMapper">
+
+    <resultMap type="DTargetInfo" id="DTargetInfoResult">
+        <result property="targetId"    column="target_id"    />
+        <result property="targetName"    column="target_name"    />
+        <result property="targetType"    column="target_type"    />
+        <result property="targetIdentity"    column="target_identity"    />
+        <result property="targetDesc"    column="target_desc"    />
+        <result property="sensorPlatformInfo"    column="sensor_platform_info"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectDTargetInfoVo">
+        select target_id, target_name, target_type, target_identity, target_desc, sensor_platform_info, create_time, update_time from SYSTEM_COLLABORATION_TEST.d_target_info
+    </sql>
+
+    <select id="selectDTargetInfoList" parameterType="DTargetInfo" resultMap="DTargetInfoResult">
+        <include refid="selectDTargetInfoVo"/>
+        <where>
+            <if test="targetId != null  and targetId != ''"> and target_id = #{targetId}</if>
+            <if test="targetName != null  and targetName != ''"> and target_name like concat('%', #{targetName}, '%')</if>
+            <if test="targetType != null  and targetType != ''"> and target_type = #{targetType}</if>
+            <if test="targetIdentity != null  and targetIdentity != ''"> and target_identity = #{targetIdentity}</if>
+            <if test="targetDesc != null  and targetDesc != ''"> and target_desc = #{targetDesc}</if>
+            <if test="sensorPlatformInfo != null  and sensorPlatformInfo != ''"> and sensor_platform_info = #{sensorPlatformInfo}</if>
+        </where>
+    </select>
+
+    <select id="selectDTargetInfoByTargetId" parameterType="String" resultMap="DTargetInfoResult">
+        <include refid="selectDTargetInfoVo"/>
+        where target_id = #{targetId}
+    </select>
+    <!-- 查询测试目标类型列表，返回不同的测试目标类型 -->
+    <select id="selectTargetTypeList" resultType="java.lang.String">
+        select distinct target_type from SYSTEM_COLLABORATION_TEST.d_target_info
+    </select>
+
+    <insert id="insertDTargetInfo" parameterType="DTargetInfo">
+        insert into SYSTEM_COLLABORATION_TEST."d_target_info"
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="targetId != null">target_id,</if>
+            <if test="targetName != null and targetName != ''">target_name,</if>
+            <if test="targetType != null and targetType != ''">target_type,</if>
+            <if test="targetIdentity != null">target_identity,</if>
+            <if test="targetDesc != null">target_desc,</if>
+            <if test="sensorPlatformInfo != null">sensor_platform_info,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="targetId != null">#{targetId},</if>
+            <if test="targetName != null and targetName != ''">#{targetName},</if>
+            <if test="targetType != null and targetType != ''">#{targetType},</if>
+            <if test="targetIdentity != null">#{targetIdentity},</if>
+            <if test="targetDesc != null">#{targetDesc},</if>
+            <if test="sensorPlatformInfo != null">#{sensorPlatformInfo},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDTargetInfo" parameterType="DTargetInfo">
+        update SYSTEM_COLLABORATION_TEST.d_target_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="targetName != null and targetName != ''">target_name = #{targetName},</if>
+            <if test="targetType != null and targetType != ''">target_type = #{targetType},</if>
+            <if test="targetIdentity != null">target_identity = #{targetIdentity},</if>
+            <if test="targetDesc != null">target_desc = #{targetDesc},</if>
+            <if test="sensorPlatformInfo != null">sensor_platform_info = #{sensorPlatformInfo},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where target_id = #{targetId}
+    </update>
+
+    <delete id="deleteDTargetInfoByTargetId" parameterType="String">
+        delete from SYSTEM_COLLABORATION_TEST.d_target_info where target_id = #{targetId}
+    </delete>
+
+    <delete id="deleteDTargetInfoByTargetIds" parameterType="String">
+        delete from SYSTEM_COLLABORATION_TEST.d_target_info where target_id in
+        <foreach item="targetId" collection="array" open="(" separator="," close=")">
+            #{targetId}
+        </foreach>
+    </delete>
+</mapper>

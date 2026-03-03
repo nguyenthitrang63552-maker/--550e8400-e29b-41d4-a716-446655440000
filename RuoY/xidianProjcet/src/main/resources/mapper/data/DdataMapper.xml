@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.DdataMapper">
+
+    <resultMap id="DdataInfoResultMap" type="DdataInfo">
+        <id column="id" property="id" />
+        <result column="target_id" property="targetId" />
+        <result column="target_type" property="targetType" />
+        <result column="target_category" property="targetCategory" />
+        <result column="experiment_id" property="experimentId" />
+        <result column="experiment_name" property="experimentName" />
+        <result column="start_time" property="startTime" />
+        <result column="location" property="location" />
+        <result column="content_desc" property="contentDesc" />
+        <result column="project_id" property="projectId" />
+        <result column="project_name" property="projectName" />
+        <result column="data_name" property="dataName" />
+        <result column="data_type" property="dataType" />
+        <result column="data_file_path" property="dataFilePath" />
+        <result column="device_id" property="deviceId" />
+        <result column="device_info" property="deviceInfo" />
+        <result column="sample_frequency" property="sampleFrequency" />
+        <result column="work_status" property="workStatus" />
+        <result column="ext_attr" property="extAttr" />
+        <result column="is_simulation" property="isSimulation" />
+        <result column="create_by" property="createBy" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+    <insert id="insertDdataInfo">
+        INSERT INTO SYSTEM_COLLABORATION_TEST.md_data_relation (
+            target_id,
+            target_type,
+            target_category,
+            experiment_id,
+            data_name,
+            data_type,
+            data_file_path,
+            device_id,
+            device_info,
+            sample_frequency,
+            work_status,
+            ext_attr,
+            is_simulation,
+            create_by
+        ) VALUES (
+            #{targetId},
+            #{targetType},
+            #{targetCategory},
+            #{experimentId},
+            #{dataName},
+            #{dataType},
+            #{dataFilePath},
+            #{deviceId},
+            #{deviceInfo},
+            #{sampleFrequency},
+            #{workStatus},
+            #{extAttr},
+            #{isSimulation},
+            #{createBy}
+        )
+    </insert>
+    <update id="updateDdataInfo" parameterType="DdataInfo">
+        UPDATE SYSTEM_COLLABORATION_TEST.md_data_relation SET
+        target_id = #{targetId},
+        target_type = #{targetType},
+        target_category = #{targetCategory},
+        experiment_id = #{experimentId},
+        data_name = #{dataName},
+        data_type = #{dataType},
+        data_file_path = #{dataFilePath},
+        device_id = #{deviceId},
+        device_info = #{deviceInfo},
+        sample_frequency = #{sampleFrequency},
+        work_status = #{workStatus},
+        ext_attr = #{extAttr},
+        is_simulation = #{isSimulation}
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteDdataInfos">
+        DELETE FROM SYSTEM_COLLABORATION_TEST.md_data_relation WHERE id IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="selectDdataInfoList" parameterType="DdataInfo" resultMap="DdataInfoResultMap">
+        SELECT
+        d.id,
+        d.data_name,
+        d.data_type,
+        d.is_simulation,
+        d.data_file_path,
+        d.target_id,
+        d.target_type,
+        d.target_category,
+        d.sample_frequency,
+        d.work_status,
+        d.ext_attr,
+        d.create_time,
+        d.data_type,
+        d.create_by,
+        e.experiment_id,
+        e.experiment_name,
+        e.start_time,
+        e.location,
+        e.content_desc,
+        p.project_id,
+        p.project_name
+        FROM SYSTEM_COLLABORATION_TEST.md_data_relation d
+        LEFT JOIN SYSTEM_COLLABORATION_TEST.d_experiment_info e ON d.experiment_id = e.experiment_id
+        LEFT JOIN SYSTEM_COLLABORATION_TEST.d_project_info p ON e.project_id = p.project_id
+        <where>
+            <if test="id != null and id != ''"> AND d.id = #{id} </if>
+            <if test="dataName != null and dataName != ''"> AND d.data_name LIKE concat('%', #{dataName}, '%') </if>
+            <if test="projectId != null and projectId != ''"> AND p.project_id = #{projectId} </if>
+            <if test="experimentName != null and experimentName != ''"> AND e.experiment_name LIKE concat('%', #{experimentName}, '%') </if>
+            <if test="createBy != null and createBy != ''"> AND e.create_by = #{createBy} </if>
+            <if test="isSimulation != null"> AND d.is_simulation = #{isSimulation} </if>
+            <if test="workStatus != null and workStatus != ''"> AND d.work_status = #{workStatus} </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(d.create_time,'%y%m%d') >= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(d.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+    </select>
+</mapper>
