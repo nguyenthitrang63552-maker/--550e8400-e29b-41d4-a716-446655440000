@@ -558,7 +558,7 @@ const single = ref(true)
 const multiple = ref(true)
 
 // 文件管理器相关状态
-const INITIAL_PATH = 'E:\\data'
+const INITIAL_PATH = '/home/hyy1208/data'
 const currentPath = ref(INITIAL_PATH)
 const fileList = ref([])
 const fileLoading = ref(false)
@@ -599,16 +599,16 @@ function handleExportData() {
     ElMessage.warning("请选择要导出的数据")
     return
   }
-  
+
   const selectedRows = businessList.value.filter(item => ids.value.includes(item.id))
   // 获取所有非空的文件路径
   const paths = selectedRows.map(item => item.dataFilePath).filter(p => p)
-  
+
   if (paths.length === 0) {
     ElMessage.warning("选中的数据中没有关联的文件路径")
     return
   }
-  
+
   submitDownloadTask(paths).then(res => {
     if (res.code === 200) pollProgress(res.data)
     else ElMessage.error(res.msg)
@@ -769,8 +769,8 @@ function getPreviewComponent(file) {
   if (!file) return null
   const fileName = file.name.toLowerCase()
   let type = 'binary'
-  
-  if (fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || 
+
+  if (fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ||
       fileName.endsWith('.gif') || fileName.endsWith('.bmp')) {
     type = 'image'
   } else if (fileName.endsWith('.mp4') || fileName.endsWith('.webm') || fileName.endsWith('.avi')) {
@@ -921,7 +921,7 @@ const submitUpload = async () => {
   if (!uploadDataFormRef.value) return
   await uploadDataFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     if (uploadFiles.value.length === 0) {
         ElMessage.warning('请选择要上传的文件')
         return
@@ -932,7 +932,7 @@ const submitUpload = async () => {
             const formData = new FormData()
             formData.append('file', file.raw)
             formData.append('path', currentPath.value)
-            
+
             await request({
                 url: '/api/file/upload',
                 method: 'post',
@@ -942,7 +942,7 @@ const submitUpload = async () => {
 
             // 上传成功后，保存业务数据
             const fullPath = currentPath.value + (currentPath.value.endsWith('\\') || currentPath.value.endsWith('/') ? '' : '/') + (file.raw.webkitRelativePath || file.name)
-            
+
             const businessData = {
                 dataName: uploadDataForm.dataName || file.name,
                 experimentId: uploadDataForm.experimentId,
@@ -955,7 +955,7 @@ const submitUpload = async () => {
                 sampleFrequency: Math.floor(Math.random() * 1000) + 1,
                 workStatus: ['正常', '异常', '待机'][Math.floor(Math.random() * 3)]
             }
-            
+
             await adddata(businessData)
         }
         ElMessage.success('数据导入成功')
@@ -1029,7 +1029,7 @@ const timer=ref(null)
 const handleDownloadDetailFile = async (row) => {
   const target = row || detailFile.value
   if (!target || !target.dataFilePath) return
-  
+
   try {
     const res = await submitDownloadTask([target.dataFilePath])
     const taskKey = res.data
@@ -1040,7 +1040,7 @@ const handleDownloadDetailFile = async (row) => {
 }
 function pollProgress(taskKey) {
     if (timer.value) clearInterval(timer.value)
-    
+
     const loadingInstance = ElLoading.service({
         lock: true,
         text: '正在打包下载，请稍候...',
@@ -1049,7 +1049,7 @@ function pollProgress(taskKey) {
 
     timer.value = setInterval(() => {
         getDownloadTaskStatus(taskKey).then(res => {
-          if (res.code !== 200) { 
+          if (res.code !== 200) {
             clearInterval(timer.value);
             loadingInstance.close();
             ElMessage.error(res.msg);
@@ -1074,12 +1074,12 @@ function pollProgress(taskKey) {
 
 function transformTreeData(data) {
     if (!data || !Array.isArray(data)) return []
-    
+
     return data.map(item => ({
         ...item,
         label: item.name, // 为树形组件添加label字段
-        children: item.children && item.children.length > 0 
-            ? transformTreeData(item.children) 
+        children: item.children && item.children.length > 0
+            ? transformTreeData(item.children)
             : []
     }))
 }
