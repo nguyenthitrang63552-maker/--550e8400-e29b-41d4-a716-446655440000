@@ -30,7 +30,6 @@ public class DdataInfo extends BaseEntity {
     private Integer sampleFrequency;
     private String workStatus;
     private String extAttr;
-    private String path;
     private Integer pageNum;
     private Integer pageSize;
     private Boolean isSimulation;
@@ -149,12 +148,6 @@ public class DdataInfo extends BaseEntity {
     }
     public String getProjectName() {
         return projectName;
-    }
-    public void setPath(String path) {
-        this.path = path;
-    }
-    public String getPath() {
-        return path;
     }
     public void setPageNum(Integer pageNum) {
         this.pageNum = pageNum;
