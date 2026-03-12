@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.LayerConfigurationMapper">
+
+    <resultMap id="LayerConfigurationResult" type="com.ruoyi.system.domain.dto.LayerConfigurationDTO">
+        <id property="id" column="ID" />
+        <result property="defaultOpacity" column="DEFAULT_OPACITY" />
+        <result property="useTransBg" column="USE_TRANS_BG" />
+        <result property="bgColor" column="BG_COLOR" />
+        <result property="textColor" column="TEXT_COLOR" />
+        <result property="textSize" column="TEXT_SIZE" />
+        <result property="refreshRate" column="REFRESH_RATE" />
+        <result property="showFloatTip" column="SHOW_FLOAT_TIP" />
+        <result property="showErrorWind" column="SHOW_ERROR_WIND" />
+        <result property="enableCache" column="ENABLE_CACHE" />
+        <result property="cacheExpireTime" column="CACHE_EXPIRE_TIME" />
+    </resultMap>
+
+    <resultMap id="LayerStatusDetailResult" type="com.ruoyi.system.domain.dto.LayerStatusDetailDTO">
+        <id property="id" column="ID" />
+        <result property="configId" column="CONFIG_ID" />
+        <result property="layerCode" column="LAYER_CODE" />
+        <result property="layerName" column="LAYER_NAME" />
+        <result property="isEnabled" column="IS_ENABLED" />
+    </resultMap>
+
+    <sql id="selectLayerConfigurationColumns">
+        "ID", "DEFAULT_OPACITY", "USE_TRANS_BG", "BG_COLOR", "TEXT_COLOR", "TEXT_SIZE",
+        "REFRESH_RATE", "SHOW_FLOAT_TIP", "SHOW_ERROR_WIND", "ENABLE_CACHE", "CACHE_EXPIRE_TIME"
+    </sql>
+
+    <select id="selectLatestLayerConfiguration" resultMap="LayerConfigurationResult">
+        select
+        <include refid="selectLayerConfigurationColumns" />
+        from "LAYER_CONFIG"
+        where "ID" = (select max("ID") from "LAYER_CONFIG")
+    </select>
+
+    <select id="selectLayerStatusDetailsByConfigId" parameterType="java.lang.Integer" resultMap="LayerStatusDetailResult">
+        select "ID", "CONFIG_ID", "LAYER_CODE", "LAYER_NAME", "IS_ENABLED"
+        from "LAYER_STATUS_DETAIL"
+        where "CONFIG_ID" = #{configId}
+        order by "ID"
+    </select>
+
+    <insert id="insertLayerConfiguration" parameterType="com.ruoyi.system.domain.dto.LayerConfigurationDTO"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="ID">
+        insert into "LAYER_CONFIG"
+        (
+            "DEFAULT_OPACITY", "USE_TRANS_BG", "BG_COLOR", "TEXT_COLOR", "TEXT_SIZE",
+            "REFRESH_RATE", "SHOW_FLOAT_TIP", "SHOW_ERROR_WIND", "ENABLE_CACHE", "CACHE_EXPIRE_TIME"
+        )
+        values
+        (
+            #{defaultOpacity}, #{useTransBg}, #{bgColor}, #{textColor}, #{textSize},
+            #{refreshRate}, #{showFloatTip}, #{showErrorWind}, #{enableCache}, #{cacheExpireTime}
+        )
+    </insert>
+
+    <update id="updateLayerConfiguration" parameterType="com.ruoyi.system.domain.dto.LayerConfigurationDTO">
+        update "LAYER_CONFIG"
+        set "DEFAULT_OPACITY" = #{defaultOpacity},
+            "USE_TRANS_BG" = #{useTransBg},
+            "BG_COLOR" = #{bgColor},
+            "TEXT_COLOR" = #{textColor},
+            "TEXT_SIZE" = #{textSize},
+            "REFRESH_RATE" = #{refreshRate},
+            "SHOW_FLOAT_TIP" = #{showFloatTip},
+            "SHOW_ERROR_WIND" = #{showErrorWind},
+            "ENABLE_CACHE" = #{enableCache},
+            "CACHE_EXPIRE_TIME" = #{cacheExpireTime}
+        where "ID" = #{id}
+    </update>
+
+    <delete id="deleteLayerStatusDetailsByConfigId" parameterType="java.lang.Integer">
+        delete from "LAYER_STATUS_DETAIL"
+        where "CONFIG_ID" = #{configId}
+    </delete>
+
+    <insert id="insertLayerStatusDetail" parameterType="com.ruoyi.system.domain.dto.LayerStatusDetailDTO">
+        insert into "LAYER_STATUS_DETAIL"
+        (
+            "CONFIG_ID", "LAYER_CODE", "LAYER_NAME", "IS_ENABLED"
+        )
+        values
+        (
+            #{configId}, #{layerCode}, #{layerName}, #{isEnabled}
+        )
+    </insert>
+</mapper>
