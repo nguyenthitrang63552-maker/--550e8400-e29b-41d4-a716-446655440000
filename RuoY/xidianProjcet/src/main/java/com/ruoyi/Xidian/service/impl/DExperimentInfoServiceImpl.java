@@ -4,22 +4,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.ruoyi.Xidian.domain.DProjectInfo;
 import com.ruoyi.Xidian.domain.TreeTableVo;
 import com.ruoyi.Xidian.mapper.DProjectInfoMapper;
-import com.ruoyi.Xidian.mapper.DTargetInfoMapper;
-import com.ruoyi.common.annotation.DataSource;
 import com.ruoyi.common.config.RuoYiConfig;
-import com.ruoyi.common.enums.DataSourceType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.common.utils.file.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
 import org.springframework.stereotype.Service;
 import com.ruoyi.Xidian.mapper.DExperimentInfoMapper;
 import com.ruoyi.Xidian.domain.DExperimentInfo;
@@ -205,17 +200,22 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService {
             throw new ServiceException("路径格式错误，只能包含字母、数字、下划线、短横线和中文字符");
         }
         String ExperimentId=dExperimentInfo.getExperimentId();
-        String oldPath=dExperimentInfoMapper.selectDExperimentInfoByExperimentId(ExperimentId).getPath();
+        DExperimentInfo dExperimentInfo1 = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(ExperimentId);
+        String oldProjectPath = dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo1.getProjectId()).getPath();
+        String oldExperimentPath=dExperimentInfoMapper.selectDExperimentInfoByExperimentId(ExperimentId).getPath();
+        Path oldPath= Paths.get(profile + oldProjectPath + oldExperimentPath);
         //修改文件路径
-        String ParentPath=dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo.getProjectId()).getPath();
-        String ExperimentPath= profile + ParentPath + dExperimentInfo.getPath();
-        Path newPath= Paths.get(ExperimentPath);
-        try{
-            //检查新路径是否已存在
-            if(Files.exists(newPath)&&!newPath.equals(Paths.get(profile + ParentPath + oldPath))){
-                throw new ServiceException("新路径已存在，请重新输入");
+        String newProjectPath=dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo.getProjectId()).getPath();
+        String NewPath= profile + newProjectPath + dExperimentInfo.getPath();
+        Path newPath= Paths.get(NewPath);
+        //检查新路径是否已存在
+        if (Files.exists(newPath) && !newPath.equals(oldPath)) {
+            throw new ServiceException("新路径已存在，请重新输入");
+        }
+        try {
+            if (!newPath.equals(oldPath)) {
+                Files.move(oldPath, newPath);
             }
-            Files.move(Paths.get(profile + ParentPath + oldPath),newPath);
         } catch (IOException e) {
             throw new ServiceException("修改试验目录失败：" + e.getMessage());
         }

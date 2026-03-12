@@ -4,6 +4,7 @@ import com.ruoyi.Xidian.domain.DdataInfo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IDdataService {
     /**
@@ -19,4 +20,6 @@ public interface IDdataService {
     Integer updateDdataInfo(DdataInfo ddataInfo);
 
     Integer deleteDdataInfos(List<Integer> ids);
+
+    List<Map<String, Object>> getMovePathTree();
 }

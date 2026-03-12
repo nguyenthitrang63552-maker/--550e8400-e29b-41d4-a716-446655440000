@@ -397,9 +397,6 @@ const data = reactive({
     ],
     contentDesc: [
       { required: true, message: "内容描述不能为空", trigger: "blur" }
-    ],
-    path: [
-      { required: true, message: "路径不能为空", trigger: "blur" }
     ]
   }
 })

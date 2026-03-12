@@ -201,6 +201,23 @@
                         </el-form-item>
                     </el-col>
                 </el-row>
+                <el-row v-if="title === '修改数据'">
+                    <el-col :span="24">
+                        <el-form-item label="目标目录">
+                            <el-tree-select
+                                v-model="selectedMovePathNodeId"
+                                :data="movePathTreeOptions"
+                                :props="{ label: 'label', children: 'children', disabled: 'disabled' }"
+                                value-key="id"
+                                placeholder="请选择目标的文件目录"
+                                check-strictly
+                                clearable
+                                filterable
+                                @change="handleMovePathChange"
+                            />
+                        </el-form-item>
+                    </el-col>
+                </el-row>
 
                 <!-- 只读字段 -->
                 <el-divider />
@@ -212,14 +229,14 @@
                     </el-col>
                     <el-col :span="12">
                         <el-form-item label="所属试验">
-                            <el-input :value="form.experimentName" disabled />
+                            <el-input :value="moveTargetExperimentName || form.experimentName" disabled />
                         </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="所属项目">
-                            <el-input :value="form.projectName" disabled />
+                            <el-input :value="moveTargetProjectName || form.projectName" disabled />
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
@@ -230,7 +247,7 @@
                 </el-row>
                 <el-row>
                     <el-col :span="24">
-                        <el-form-item label="路径">
+                        <el-form-item label="当前路径">
                             <el-input :value="form.dataFilePath" disabled />
                         </el-form-item>
                     </el-col>
@@ -448,7 +465,7 @@
 import useAppStore from '@/store/modules/app'
 import {Splitpanes, Pane} from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
-import {getExperimentList,getdataList,getdataDetail,updatedata,deldata,adddata,previewData,downloadData} from '@/api/data/bussiness'
+import {getExperimentList,getdataList,getdataDetail,getMovePathTree,updatedata,deldata,adddata,previewData,downloadData} from '@/api/data/bussiness'
 import {getInfo} from "@/api/data/info"
 import { addDateRange, blobValidate } from "@/utils/ruoyi"
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
@@ -461,7 +478,6 @@ import BinaryViewer from '@/views/viewer/BinaryViewer.vue'
 import PDFViewer from '@/views/viewer/PDFViewer.vue'
 import ExcelViewer from '@/views/viewer/ExcelViewer.vue'
 import { saveAs } from 'file-saver'
-import { submitDownloadTask, getDownloadTaskStatus } from '@/api/file'
 const dateRange = ref([])
 const { proxy } = getCurrentInstance()
 const treeTableOptions = ref(undefined)
@@ -504,6 +520,11 @@ const detailPreviewPageNum = ref(1)
 const detailPreviewPageSize = ref(200)
 const detailPreviewTotal = ref(0)
 const detailTableRows = ref([])
+const movePathTreeOptions = ref([])
+const movePathNodeMap = ref({})
+const selectedMovePathNodeId = ref(null)
+const selectedMovePathNode = ref(null)
+const currentFileSuffix = ref('')
 
 /** 打开文件管理器 (导入) */
 function openFileManager() {
@@ -520,25 +541,46 @@ function openFileManager() {
 }
 
 /** 导出数据 (下载) */
-function handleExportData() {
+async function handleExportData() {
   if (ids.value.length === 0) {
     ElMessage.warning("请选择要导出的数据")
     return
   }
 
   const selectedRows = businessList.value.filter(item => ids.value.includes(item.id))
-  // 获取所有非空的文件路径
-  const paths = selectedRows.map(item => item.dataFilePath).filter(p => p)
+  const downloadableRows = selectedRows.filter(item => item.experimentId && item.dataFilePath)
+  const skippedCount = selectedRows.length - downloadableRows.length
 
-  if (paths.length === 0) {
+  if (downloadableRows.length === 0) {
     ElMessage.warning("选中的数据中没有关联的文件路径")
     return
   }
 
-  submitDownloadTask(paths).then(res => {
-    if (res.code === 200) pollProgress(res.data)
-    else ElMessage.error(res.msg)
-  }).catch(e => ElMessage.error('导出请求失败: ' + (e.message || '未知错误')))
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: `正在下载(0/${downloadableRows.length})`,
+    background: 'rgba(0, 0, 0, 0.4)'
+  })
+
+  let successCount = 0
+  try {
+    for (let i = 0; i < downloadableRows.length; i++) {
+      loadingInstance.setText(`正在下载(${i + 1}/${downloadableRows.length})`)
+      const row = downloadableRows[i]
+      const ok = await handleDownloadDetailFile(row, { silent: true })
+      if (ok) successCount++
+    }
+  } finally {
+    loadingInstance.close()
+  }
+
+  const failCount = downloadableRows.length - successCount
+  if (failCount === 0 && skippedCount === 0) {
+    ElMessage.success(`已开始下载${successCount}个文件`)
+    return
+  }
+
+  ElMessage.warning(`下载完成：成功${successCount}个，失败${failCount}个，跳过${skippedCount}个`)
 }
 
 const uploadDataForm = reactive({
@@ -611,6 +653,88 @@ function getProjects() {
     ElMessage.error('获取项目信息失败: ' + (err.message || '未知错误'))
   })
 }
+
+function normalizeRelativePath(path) {
+  let normalized = (path || '/').toString().trim().replace(/\\/g, '/')
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`
+  }
+  normalized = normalized.replace(/\/+/g, '/')
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1)
+  }
+  return normalized || '/'
+}
+
+function extractFileSuffix(path) {
+  const normalized = normalizeRelativePath(path)
+  const fileName = normalized.substring(normalized.lastIndexOf('/') + 1)
+  const dotIndex = fileName.lastIndexOf('.')
+  return dotIndex > -1 ? fileName.substring(dotIndex) : ''
+}
+
+function extractDirPath(path) {
+  const normalized = normalizeRelativePath(path)
+  const index = normalized.lastIndexOf('/')
+  return index <= 0 ? '/' : normalized.substring(0, index)
+}
+
+function buildRelativeDataFilePath(directory, fileName, suffix) {
+  const normalizedDir = normalizeRelativePath(directory || '/')
+  const safeSuffix = suffix || ''
+  return normalizedDir === '/' ? `/${fileName}${safeSuffix}` : `${normalizedDir}/${fileName}${safeSuffix}`
+}
+
+function buildMovePathNodeMap(nodes, map = {}) {
+  ;(nodes || []).forEach(node => {
+    if (!node) return
+    if (node.id != null) {
+      map[node.id] = node
+    }
+    if (Array.isArray(node.children) && node.children.length) {
+      buildMovePathNodeMap(node.children, map)
+    }
+  })
+  return map
+}
+
+async function loadMovePathTree() {
+  try {
+    const response = await getMovePathTree()
+    const treeData = response.data || []
+    movePathTreeOptions.value = treeData
+    movePathNodeMap.value = buildMovePathNodeMap(treeData)
+  } catch (error) {
+    movePathTreeOptions.value = []
+    movePathNodeMap.value = {}
+    ElMessage.error('加载目标目录失败: ' + (error.message || '未知错误'))
+  }
+}
+
+function handleMovePathChange(nodeId) {
+  if (!nodeId) {
+    selectedMovePathNode.value = null
+    return
+  }
+  const node = movePathNodeMap.value[nodeId]
+  selectedMovePathNode.value = node && (node.type === 'dir' || node.type === 'experiment') ? node : null
+}
+
+const moveTargetExperimentName = computed(() => selectedMovePathNode.value?.experimentName || '')
+const moveTargetProjectName = computed(() => selectedMovePathNode.value?.projectName || '')
+const previewDataFilePath = computed(() => {
+  const originalPath = form.value?.dataFilePath
+  if (!originalPath) return ''
+
+  const fileName = (form.value?.fileName || '').trim()
+  if (!fileName) return originalPath
+
+  const suffix = currentFileSuffix.value || extractFileSuffix(originalPath)
+  if (selectedMovePathNode.value && (selectedMovePathNode.value.type === 'dir' || selectedMovePathNode.value.type === 'experiment')) {
+    return buildRelativeDataFilePath(selectedMovePathNode.value.relativePath, fileName, suffix)
+  }
+  return buildRelativeDataFilePath(extractDirPath(originalPath), fileName, suffix)
+})
 
 // --- 文件管理器逻辑开始 ---
 
@@ -787,13 +911,12 @@ const submitUpload = async () => {
   })
 }
 
-const percent=ref(0)
-const timer=ref(null)
 /** 下载详情中的文件 */
-const handleDownloadDetailFile = async (row) => {
+const handleDownloadDetailFile = async (row, options = {}) => {
+  const { silent = false } = options
   if(!row.experimentId || !row.dataFilePath){
-    ElMessage.warning('缺少下载参数')
-    return
+    if (!silent) ElMessage.warning('缺少下载参数')
+    return false
   }
   try {
     const data = await downloadData({
@@ -802,15 +925,17 @@ const handleDownloadDetailFile = async (row) => {
       dataFilePath: row?.dataFilePath
     })
     if (blobValidate(data)) {
-      const fileName = row.name || row.dataFilePath.substring(row.dataFilePath.lastIndexOf('/') + 1) || 'download'
+      const fileName = row.name || row.dataName || row.dataFilePath.split(/[\\/]/).pop() || 'download'
       saveAs(new Blob([data]), fileName)
-      return
+      return true
     }
     const resText = await data.text()
     const rspObj = JSON.parse(resText)
-    ElMessage.error(rspObj.msg || '下载失败')
+    if (!silent) ElMessage.error(rspObj.msg || '下载失败')
+    return false
   } catch (e) {
-    ElMessage.error('下载失败: ' + (e.message || '未知错误'))
+    if (!silent) ElMessage.error('下载失败: ' + (e.message || '未知错误'))
+    return false
   }
 }
 // --- 文件管理器逻辑结束 ---
@@ -887,6 +1012,9 @@ function reset() {
     location: null,
     contentDesc: null
   }
+  selectedMovePathNodeId.value = null
+  selectedMovePathNode.value = null
+  currentFileSuffix.value = ''
   proxy.resetForm("dataRef")
 }
 
@@ -909,27 +1037,56 @@ function handleDelete(row) {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
+async function handleUpdate(row) {
   reset()
   const id = row.id
-  getdataDetail(id).then(response => {
-    form.value = response.data
+  try {
+    const [detailResponse] = await Promise.all([
+      getdataDetail(id),
+      loadMovePathTree()
+    ])
+    form.value = detailResponse.data
     form.value.id = id
+    currentFileSuffix.value = extractFileSuffix(form.value.dataFilePath || '')
+    selectedMovePathNodeId.value = null
+    selectedMovePathNode.value = null
     open.value = true
     title.value = "修改数据"
-  })
+  } catch (error) {
+    ElMessage.error('加载修改信息失败: ' + (error.message || '未知错误'))
+  }
 }
 
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["dataRef"].validate(valid => {
-    if (valid) {
-      updatedata(form.value).then(response => {
-        proxy.$modal.msgSuccess("修改成功")
-        open.value = false
-        getList()
-      })
+    if (!valid) return
+
+    const submitData = { ...form.value }
+    const fileName = (submitData.fileName || '').trim()
+    if (!fileName) {
+      ElMessage.warning("文件名称不能为空")
+      return
     }
+
+    const suffix = currentFileSuffix.value || extractFileSuffix(submitData.dataFilePath || '')
+    let targetDir = extractDirPath(submitData.dataFilePath || '/')
+
+    if (selectedMovePathNode.value && (selectedMovePathNode.value.type === 'dir' || selectedMovePathNode.value.type === 'experiment')) {
+      targetDir = selectedMovePathNode.value.relativePath
+      submitData.experimentId = selectedMovePathNode.value.experimentId
+    }
+
+    submitData.fileName = fileName
+    submitData.dataFilePath = buildRelativeDataFilePath(targetDir, fileName, suffix)
+
+    updatedata(submitData).then(() => {
+      proxy.$modal.msgSuccess("修改成功")
+      open.value = false
+      getList()
+    }).catch(error => {
+      ElMessage.error('修改失败: ' + (error.message || '未知错误'))
+    })
   })
 }
 

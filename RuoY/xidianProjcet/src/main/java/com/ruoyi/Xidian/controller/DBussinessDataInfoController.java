@@ -54,7 +54,13 @@ public class DBussinessDataInfoController extends BaseController {
     public AjaxResult getDDataInfoByDdataId(@PathVariable Integer id)
     {
         DdataInfo ddataInfo = ddataService.selectDdataInfoByDdataId(id);
-        ddataInfo.setFileName(ddataInfo.getDataFilePath().substring(1, ddataInfo.getDataFilePath().lastIndexOf(".")));
+        if (ddataInfo != null && StringUtils.isNotEmpty(ddataInfo.getDataFilePath()))
+        {
+            String relativePath = StringUtils.removeStart(ddataInfo.getDataFilePath(), "/");
+            String fileName = FileUtils.getName(relativePath);
+            int dotIndex = fileName.lastIndexOf(".");
+            ddataInfo.setFileName(dotIndex > -1 ? fileName.substring(0, dotIndex) : fileName);
+        }
         return AjaxResult.success(ddataInfo);
     }
     @PreAuthorize("@ss.hasPermi('dataInfo:info:insert')")
@@ -70,6 +76,13 @@ public class DBussinessDataInfoController extends BaseController {
     public AjaxResult updateDDataInfo(@RequestBody DdataInfo ddataInfo)
     {
         return AjaxResult.success(ddataService.updateDdataInfo(ddataInfo));
+    }
+
+    @PreAuthorize("@ss.hasPermi('dataInfo:info:update')")
+    @GetMapping("/movePathTree")
+    public AjaxResult getMovePathTree()
+    {
+        return AjaxResult.success(ddataService.getMovePathTree());
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:delete')")

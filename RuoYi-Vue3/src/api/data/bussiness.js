@@ -19,6 +19,14 @@ export function getdataDetail(id) {
     method: 'get'
   })
 }
+
+export function getMovePathTree() {
+  return request({
+    url: '/data/bussiness/movePathTree',
+    method: 'get'
+  })
+}
+
 export function updatedata(data) {
   return request({
     url: '/data/bussiness/update',
