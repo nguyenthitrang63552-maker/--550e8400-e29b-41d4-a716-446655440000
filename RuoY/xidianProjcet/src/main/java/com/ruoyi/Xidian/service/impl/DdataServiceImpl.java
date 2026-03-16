@@ -73,7 +73,7 @@ public class DdataServiceImpl implements IDdataService
         ddataInfo.setSampleFrequency(1000);
         try
         {
-            String filePath = BuildDataFilePath(ddataInfo);
+            String filePath = "/data" + BuildDataFilePath(ddataInfo);
             FileUploadUtils.upload(filePath, file);
         }
         catch (IOException e)

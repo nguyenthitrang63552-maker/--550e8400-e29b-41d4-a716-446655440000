@@ -36,7 +36,7 @@ public class SysOperlogController extends BaseController
         return getDataTable(list);
     }
 
-    @Log(title = "操作日志", businessType = BusinessType.EXPORT)
+    @Log(title = "将操作日志导出为Excel", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('monitor:operlog:export')")
     @PostMapping("/export")
     public void export(HttpServletResponse response, Long[] operIds)
@@ -49,7 +49,7 @@ public class SysOperlogController extends BaseController
         util.exportExcel(response, list, "操作日志");
     }
 
-    @Log(title = "操作日志", businessType = BusinessType.EXPORT)
+    @Log(title = "将操作日志导出为Word文档", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('monitor:operlog:export')")
     @PostMapping("/export/word")
     public void exportWord(HttpServletResponse response, Long[] operIds) throws Exception
@@ -61,7 +61,7 @@ public class SysOperlogController extends BaseController
         LogDocumentExportUtil.exportOperLogWord(response, list);
     }
 
-    @Log(title = "操作日志", businessType = BusinessType.EXPORT)
+    @Log(title = "将操作日志导出为PDF文档", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('monitor:operlog:export')")
     @PostMapping("/export/pdf")
     public void exportPdf(HttpServletResponse response, Long[] operIds) throws Exception
@@ -73,7 +73,7 @@ public class SysOperlogController extends BaseController
         LogDocumentExportUtil.exportOperLogPdf(response, list);
     }
 
-    @Log(title = "操作日志", businessType = BusinessType.DELETE)
+    @Log(title = "删除操作日志", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('monitor:operlog:remove')")
     @DeleteMapping("/{operIds}")
     public AjaxResult remove(@PathVariable Long[] operIds)
@@ -81,7 +81,7 @@ public class SysOperlogController extends BaseController
         return toAjax(operLogService.deleteOperLogByIds(operIds));
     }
 
-    @Log(title = "操作日志", businessType = BusinessType.CLEAN)
+    @Log(title = "清空操作日志", businessType = BusinessType.CLEAN)
     @PreAuthorize("@ss.hasPermi('monitor:operlog:remove')")
     @DeleteMapping("/clean")
     public AjaxResult clean()

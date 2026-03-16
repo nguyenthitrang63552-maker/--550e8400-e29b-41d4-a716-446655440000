@@ -28,6 +28,7 @@ import java.util.Map;
 public class DBussinessDataInfoController extends BaseController {
     private static final int DEFAULT_PREVIEW_PAGE_SIZE = 20;
     private static final int MAX_PREVIEW_PAGE_SIZE = 1000;
+    public final String profilePath = RuoYiConfig.getProfile() + "/data";
 
     @Autowired
     private IDExperimentInfoService dExperimentInfoService;
@@ -102,7 +103,7 @@ public class DBussinessDataInfoController extends BaseController {
         int pageNum = ddataInfo.getPageNum() == null || ddataInfo.getPageNum() < 1 ? 1 : ddataInfo.getPageNum();
         int pageSize = ddataInfo.getPageSize() == null || ddataInfo.getPageSize() < 1 ? DEFAULT_PREVIEW_PAGE_SIZE : ddataInfo.getPageSize();
         pageSize = Math.min(pageSize, MAX_PREVIEW_PAGE_SIZE);
-        String filePath = RuoYiConfig.getProfile() + AncestPath + dExperimentInfo.getPath() + "/" + ddataInfo.getDataFilePath();
+        String filePath = profilePath + AncestPath + dExperimentInfo.getPath()  + ddataInfo.getDataFilePath();
         Map<String, Object> previewData = FileUtils.previewExcelByPage(filePath, pageNum, pageSize);
         return success(previewData);
     }
@@ -124,7 +125,7 @@ public class DBussinessDataInfoController extends BaseController {
 
         String ancestPath = dProjectInfoService.selectDProjectInfoByProjectId(dExperimentInfo.getProjectId()).getPath();
         String relativePath = StringUtils.removeStart(ddataInfo.getDataFilePath(), "/");
-        String absolutePath = RuoYiConfig.getProfile() + ancestPath + dExperimentInfo.getPath() + "/" + relativePath;
+        String absolutePath = profilePath + ancestPath + dExperimentInfo.getPath() + "/" + relativePath;
         FileUtils.downloadFile(absolutePath, FileUtils.getName(relativePath), response);
     }
 }

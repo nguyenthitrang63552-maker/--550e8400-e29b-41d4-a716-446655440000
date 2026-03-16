@@ -1,8 +1,11 @@
 package com.ruoyi.quartz.task;
 
+import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.mapper.SysOperLogMapper;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.ISysLogArchiveService;
+import com.ruoyi.system.service.ISysNoticeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +28,8 @@ public class AuditLogMonitorTask {
     @Autowired
     private ISysLogArchiveService logArchiveService;
 
-    // 如果你想发站内信，可以注入公告服务
-    // @Autowired
-    // private ISysNoticeService noticeService;
+     @Autowired
+     private ISysNoticeService noticeService;
 
     /**
      * 执行监控检测
@@ -36,9 +38,9 @@ public class AuditLogMonitorTask {
     public void checkLogSpace() {
         log.info("【审计日志监控】=== 开始检测存储空间 ===");
         try {
-            // 1. 从 sys_config 表获取阈值 (如果没有配置，默认给个 5000MB，即 5GB)
+            // 1. 从 sys_config 表获取阈值
             String thresholdStr = configService.selectConfigByKey("audit.log.max.size");
-            double thresholdMb = 5000.0;
+            double thresholdMb = RuoYiConfig.getThresholdMb();
             if (thresholdStr != null && !thresholdStr.isEmpty()) {
                 thresholdMb = Double.parseDouble(thresholdStr);
             }
@@ -54,8 +56,8 @@ public class AuditLogMonitorTask {
             // 3. 判断并触发告警
             if (currentSizeMb >= thresholdMb) {
                 triggerAlert(currentSizeMb, thresholdMb);
-                // 超过阈值时，自动将 6 个月前的日志备份到硬盘，并从数据库删除
-                logArchiveService.archiveAndCleanOldLogs(6);
+                // 超过阈值时，自动将 12 个月前的日志备份到硬盘，并从数据库删除
+                logArchiveService.archiveAndCleanOldLogs(12);
             }
 
         } catch (Exception e) {
@@ -71,11 +73,8 @@ public class AuditLogMonitorTask {
         String msg = String.format("【安全预警】系统审计日志存储空间已达临界值！当前大小: %.2f MB，设定的阈值: %.2f MB。请超级管理员尽快进行清理，防止系统存储爆满！",
                 currentSize, threshold);
 
-        // 1. 打印 Error 日志（如果你们对接了日志收集系统，这一步可以直接触发外部告警）
+        // 1. 打印 Error 日志
         log.error(msg);
-
-        // 2. TODO: 写入系统通知（站内信），让管理员登录就能看到
-        /*
         SysNotice notice = new SysNotice();
         notice.setNoticeTitle("【严重】审计日志空间告警");
         notice.setNoticeType("2"); // 1通知 2公告
@@ -83,8 +82,7 @@ public class AuditLogMonitorTask {
         notice.setStatus("0");
         notice.setCreateBy("system");
         noticeService.insertNotice(notice);
-        */
 
-        // 3. TODO: 发送邮件 / 钉钉 / 企业微信 (根据你们公司的基建补充)
+        // 3. TODO: 发送邮件 / 钉钉 / 企业微信
     }
 }

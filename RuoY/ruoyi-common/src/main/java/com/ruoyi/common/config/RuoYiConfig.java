@@ -27,6 +27,8 @@ public class RuoYiConfig
     /** 备份目录 */
     private static String backupDir;
 
+    private static double thresholdMb;
+
     /** 获取地址开关 */
     private static boolean addressEnabled;
 
@@ -131,5 +133,14 @@ public class RuoYiConfig
     public static String getUploadPath()
     {
         return getProfile() + "/upload";
+    }
+
+    public static double getThresholdMb()
+    {
+        return thresholdMb;
+    }
+    public void setThresholdMb(double thresholdMb)
+    {
+        RuoYiConfig.thresholdMb = thresholdMb;
     }
 }
