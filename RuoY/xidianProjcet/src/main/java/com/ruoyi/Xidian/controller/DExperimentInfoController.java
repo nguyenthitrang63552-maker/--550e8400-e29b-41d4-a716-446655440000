@@ -118,7 +118,7 @@ public class DExperimentInfoController extends BaseController
      * 修改试验信息主
      */
     @PreAuthorize("@ss.hasPermi('data:info:edit')")
-    @Log(title = "试验信息", businessType = BusinessType.UPDATE)
+    @Log(title = "修改项目或试验信息", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TreeTableVo treeTableVo)
     {
@@ -148,7 +148,7 @@ public class DExperimentInfoController extends BaseController
      * 删除试验信息主
      */
     @PreAuthorize("@ss.hasPermi('data:info:remove')")
-    @Log(title = "试验信息", businessType = BusinessType.DELETE)
+    @Log(title = "删除项目或试验信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{experimentIds}/project/{projectIds}")
     public AjaxResult remove(@PathVariable String[] experimentIds,@PathVariable Long[] projectIds)
     {

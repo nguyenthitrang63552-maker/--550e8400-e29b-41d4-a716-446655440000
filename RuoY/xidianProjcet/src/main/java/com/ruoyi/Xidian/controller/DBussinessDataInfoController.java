@@ -110,6 +110,7 @@ public class DBussinessDataInfoController extends BaseController {
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:download')")
     @PostMapping("/download")
+    @Log(title = "下载数据文件" , businessType = BusinessType.EXPORT)
     public void downloadDDataInfoFile(@RequestBody DdataInfo ddataInfo, HttpServletResponse response)
     {
         if (StringUtils.isEmpty(ddataInfo.getExperimentId()) || StringUtils.isEmpty(ddataInfo.getDataFilePath()))
