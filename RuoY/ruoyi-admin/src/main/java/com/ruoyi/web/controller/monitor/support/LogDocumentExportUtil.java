@@ -34,11 +34,15 @@ public final class LogDocumentExportUtil
 
     public static void exportOperLogWord(HttpServletResponse response, List<SysOperLog> data) throws IOException
     {
-        String[] headers = { "ID", "Module", "BusinessType", "RequestMethod", "Operator", "IP", "Location", "Status", "OperTime", "CostTime(ms)" };
+        String[] headers = { "ID", "Module", "BusinessType", "EventType", "RiskLevel", "BizCategory", "HighlightTag", "RequestMethod", "Operator", "IP", "Location", "Status", "OperTime", "CostTime(ms)" };
         writeWord(response, "operlog", headers, data, item -> new String[] {
                 toString(item.getOperId()),
                 safe(item.getTitle()),
                 formatBusinessType(item.getBusinessType()),
+                safe(item.getEventType()),
+                toString(item.getRiskLevel()),
+                safe(item.getBizCategory()),
+                safe(item.getHighlightTag()),
                 safe(item.getRequestMethod()),
                 safe(item.getOperName()),
                 safe(item.getOperIp()),
@@ -50,11 +54,15 @@ public final class LogDocumentExportUtil
 
     public static void exportOperLogPdf(HttpServletResponse response, List<SysOperLog> data) throws Exception
     {
-        String[] headers = { "ID", "Module", "BusinessType", "RequestMethod", "Operator", "IP", "Location", "Status", "OperTime", "CostTime(ms)" };
+        String[] headers = { "ID", "Module", "BusinessType", "EventType", "RiskLevel", "BizCategory", "HighlightTag", "RequestMethod", "Operator", "IP", "Location", "Status", "OperTime", "CostTime(ms)" };
         writePdf(response, "operlog", "Operation Log", headers, data, item -> new String[] {
                 toString(item.getOperId()),
                 safe(item.getTitle()),
                 formatBusinessType(item.getBusinessType()),
+                safe(item.getEventType()),
+                toString(item.getRiskLevel()),
+                safe(item.getBizCategory()),
+                safe(item.getHighlightTag()),
                 safe(item.getRequestMethod()),
                 safe(item.getOperName()),
                 safe(item.getOperIp()),
@@ -66,7 +74,7 @@ public final class LogDocumentExportUtil
 
     public static void exportLoginInfoWord(HttpServletResponse response, List<SysLogininfor> data) throws IOException
     {
-        String[] headers = { "ID", "Username", "IP", "Location", "Browser", "OS", "Status", "Message", "LoginTime" };
+        String[] headers = { "ID", "Username", "IP", "Location", "Browser", "OS", "Status", "EventType", "RiskLevel", "BizCategory", "HighlightTag", "Message", "LoginTime" };
         writeWord(response, "logininfor", headers, data, item -> new String[] {
                 toString(item.getInfoId()),
                 safe(item.getUserName()),
@@ -75,13 +83,17 @@ public final class LogDocumentExportUtil
                 safe(item.getBrowser()),
                 safe(item.getOs()),
                 formatLoginStatus(item.getStatus()),
+                safe(item.getEventType()),
+                toString(item.getRiskLevel()),
+                safe(item.getBizCategory()),
+                safe(item.getHighlightTag()),
                 safe(item.getMsg()),
                 formatDate(item.getLoginTime()) });
     }
 
     public static void exportLoginInfoPdf(HttpServletResponse response, List<SysLogininfor> data) throws Exception
     {
-        String[] headers = { "ID", "Username", "IP", "Location", "Browser", "OS", "Status", "Message", "LoginTime" };
+        String[] headers = { "ID", "Username", "IP", "Location", "Browser", "OS", "Status", "EventType", "RiskLevel", "BizCategory", "HighlightTag", "Message", "LoginTime" };
         writePdf(response, "logininfor", "Login Log", headers, data, item -> new String[] {
                 toString(item.getInfoId()),
                 safe(item.getUserName()),
@@ -90,6 +102,10 @@ public final class LogDocumentExportUtil
                 safe(item.getBrowser()),
                 safe(item.getOs()),
                 formatLoginStatus(item.getStatus()),
+                safe(item.getEventType()),
+                toString(item.getRiskLevel()),
+                safe(item.getBizCategory()),
+                safe(item.getHighlightTag()),
                 safe(item.getMsg()),
                 formatDate(item.getLoginTime()) });
     }

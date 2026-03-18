@@ -58,6 +58,67 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="事件类型" prop="eventType">
+        <el-select
+            v-model="queryParams.eventType"
+            placeholder="请选择事件类型"
+            clearable
+            style="width: 240px"
+        >
+          <el-option
+              v-for="item in eventTypeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="风险等级" prop="riskLevel">
+        <el-select
+            v-model="queryParams.riskLevel"
+            placeholder="请选择风险等级"
+            clearable
+            style="width: 240px"
+        >
+          <el-option
+              v-for="item in riskLevelOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="业务分类" prop="bizCategory">
+        <el-select
+            v-model="queryParams.bizCategory"
+            placeholder="请选择业务分类"
+            clearable
+            style="width: 240px"
+        >
+          <el-option
+              v-for="item in bizCategoryOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="醒目标识" prop="highlightTag">
+        <el-select
+            v-model="queryParams.highlightTag"
+            placeholder="请选择醒目标识"
+            clearable
+            filterable
+            style="width: 240px"
+        >
+          <el-option
+              v-for="item in highlightTagOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="操作时间" style="width: 308px">
         <el-date-picker
             v-model="dateRange"
@@ -160,6 +221,43 @@
           <dict-tag :options="sys_common_status" :value="scope.row.status"/>
         </template>
       </el-table-column>
+      <el-table-column label="事件类型" align="center" prop="eventType" width="100">
+        <template #default="scope">
+          <el-tag v-if="scope.row.eventType" :type="getAuditEventTypeTagType(scope.row.eventType)" effect="plain">
+            {{ formatAuditOption(eventTypeOptions, scope.row.eventType) }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="风险等级" align="center" prop="riskLevel" width="100">
+        <template #default="scope">
+          <el-tag v-if="scope.row.riskLevel" :type="getAuditRiskLevelTagType(scope.row.riskLevel)" effect="plain">
+            {{ formatRiskLevel(scope.row.riskLevel) }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="业务分类" align="center" prop="bizCategory" width="110">
+        <template #default="scope">
+          <span>{{ formatAuditOption(bizCategoryOptions, scope.row.bizCategory) || "-" }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="醒目标识" align="center" prop="highlightTag" min-width="180">
+        <template #default="scope">
+          <div v-if="scope.row.highlightTag" class="audit-tag-list">
+            <el-tag
+                v-for="tag in splitAuditHighlightTags(scope.row.highlightTag)"
+                :key="`${scope.row.operId}-${tag}`"
+                type="danger"
+                effect="plain"
+                class="audit-tag-item"
+            >
+              {{ tag }}
+            </el-tag>
+          </div>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作时间" align="center" prop="operTime" width="180" sortable="custom"
                        :sort-orders="['descending', 'ascending']">
         <template #default="scope">
@@ -196,6 +294,39 @@
           <el-col :span="12">
             <el-form-item label="请求地址：">{{ form.operUrl }}</el-form-item>
             <el-form-item label="请求方式：">{{ form.requestMethod }}</el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="事件类型：">
+              <el-tag v-if="form.eventType" :type="getAuditEventTypeTagType(form.eventType)" effect="plain">
+                {{ formatAuditOption(eventTypeOptions, form.eventType) }}
+              </el-tag>
+              <span v-else>-</span>
+            </el-form-item>
+            <el-form-item label="业务分类：">
+              {{ formatAuditOption(bizCategoryOptions, form.bizCategory) || "-" }}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="风险等级：">
+              <el-tag v-if="form.riskLevel" :type="getAuditRiskLevelTagType(form.riskLevel)" effect="plain">
+                {{ formatRiskLevel(form.riskLevel) }}
+              </el-tag>
+              <span v-else>-</span>
+            </el-form-item>
+            <el-form-item label="醒目标识：">
+              <div v-if="form.highlightTag" class="audit-tag-list audit-tag-list--start">
+                <el-tag
+                    v-for="tag in splitAuditHighlightTags(form.highlightTag)"
+                    :key="`detail-${tag}`"
+                    type="danger"
+                    effect="plain"
+                    class="audit-tag-item"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+              <span v-else>-</span>
+            </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="操作描述：" style="word-break: break-all; white-space: pre-wrap;">
@@ -235,6 +366,17 @@
 
 <script setup name="Operlog">
 import {list, delOperlog, cleanOperlog, getOperlogStorage} from "@/api/monitor/operlog"
+import {
+  auditBizCategoryOptions,
+  auditEventTypeOptions,
+  auditHighlightTagOptions,
+  auditRiskLevelOptions,
+  getAuditEventTypeTagType,
+  getAuditOptionLabel,
+  getAuditRiskLevelLabel,
+  getAuditRiskLevelTagType,
+  splitAuditHighlightTags
+} from "@/utils/auditLog"
 
 const {proxy} = getCurrentInstance()
 const {sys_oper_type, sys_common_status} = proxy.useDict("sys_oper_type", "sys_common_status")
@@ -252,6 +394,10 @@ const dateRange = ref([])
 const defaultSort = ref({prop: "operTime", order: "descending"})
 const detailDescription = ref("")
 const detailFacts = ref("")
+const eventTypeOptions = auditEventTypeOptions
+const riskLevelOptions = auditRiskLevelOptions
+const bizCategoryOptions = auditBizCategoryOptions
+const highlightTagOptions = auditHighlightTagOptions
 const storageInfo = ref({
   usedMb: 0,
   maxMb: 0,
@@ -279,7 +425,11 @@ const data = reactive({
     title: undefined,
     operName: undefined,
     businessType: undefined,
-    status: undefined
+    status: undefined,
+    eventType: undefined,
+    riskLevel: undefined,
+    bizCategory: undefined,
+    highlightTag: undefined
   }
 })
 
@@ -312,6 +462,14 @@ function loadStorage() {
 /** 操作日志类型字典翻译 */
 function typeFormat(row, column) {
   return proxy.selectDictLabel(sys_oper_type.value, row.businessType)
+}
+
+function formatAuditOption(options, value) {
+  return getAuditOptionLabel(options, value)
+}
+
+function formatRiskLevel(value) {
+  return getAuditRiskLevelLabel(value)
 }
 
 /** 搜索按钮操作 */
@@ -685,5 +843,20 @@ getList()
   margin-top: 8px;
   color: #f56c6c;
   font-size: 13px;
+}
+
+.audit-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.audit-tag-list--start {
+  justify-content: flex-start;
+}
+
+.audit-tag-item {
+  margin: 0;
 }
 </style>

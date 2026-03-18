@@ -70,7 +70,7 @@ spring:
   devtools:
     restart:
       # 热部署开关
-      enabled: true
+      enabled: false
   # redis 配置
   redis:
     # 地址 需修改为服务器端口地址
@@ -130,7 +130,7 @@ referer:
   # 防盗链开关
   enabled: false
   # 允许的域名列表
-  allowed-domains: localhost,127.0.0.1,ruoyi.vip,www.ruoyi.vip
+  allowed-domains: localhost,127.0.0.1
 
 # 防止XSS攻击
 xss:
@@ -140,7 +140,7 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
-# 第三方API配置
+# 第三方API配置,需更换为自己的api
 third-api:
   amap:
     key: "123456789"

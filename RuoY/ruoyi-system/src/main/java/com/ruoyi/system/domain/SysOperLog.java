@@ -87,6 +87,22 @@ public class SysOperLog extends BaseEntity
     @Excel(name = "消耗时间", suffix = "毫秒")
     private Long costTime;
 
+    /** 事件类型 */
+    @Excel(name = "事件类型")
+    private String eventType;
+
+    /** 风险等级 */
+    @Excel(name = "风险等级")
+    private Integer riskLevel;
+
+    /** 业务分类 */
+    @Excel(name = "业务分类")
+    private String bizCategory;
+
+    /** 醒目标识 */
+    @Excel(name = "醒目标识")
+    private String highlightTag;
+
     public Long getOperId()
     {
         return operId;
@@ -265,5 +281,45 @@ public class SysOperLog extends BaseEntity
     public void setCostTime(Long costTime)
     {
         this.costTime = costTime;
+    }
+
+    public String getEventType()
+    {
+        return eventType;
+    }
+
+    public void setEventType(String eventType)
+    {
+        this.eventType = eventType;
+    }
+
+    public Integer getRiskLevel()
+    {
+        return riskLevel;
+    }
+
+    public void setRiskLevel(Integer riskLevel)
+    {
+        this.riskLevel = riskLevel;
+    }
+
+    public String getBizCategory()
+    {
+        return bizCategory;
+    }
+
+    public void setBizCategory(String bizCategory)
+    {
+        this.bizCategory = bizCategory;
+    }
+
+    public String getHighlightTag()
+    {
+        return highlightTag;
+    }
+
+    public void setHighlightTag(String highlightTag)
+    {
+        this.highlightTag = highlightTag;
     }
 }

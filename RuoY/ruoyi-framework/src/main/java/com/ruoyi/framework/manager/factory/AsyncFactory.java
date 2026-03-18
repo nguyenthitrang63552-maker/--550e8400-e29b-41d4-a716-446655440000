@@ -1,12 +1,14 @@
 package com.ruoyi.framework.manager.factory;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.TimerTask;
-
 import com.alibaba.fastjson2.JSON;
+import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.enums.BusinessStatus;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.enums.OperatorType;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.http.HttpUtils;
 import org.slf4j.Logger;
@@ -19,9 +21,8 @@ import com.ruoyi.common.utils.http.UserAgentUtils;
 import com.ruoyi.common.utils.ip.AddressUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.common.utils.spring.SpringUtils;
-import com.ruoyi.system.domain.SysLogininfor;
+import com.ruoyi.framework.audit.AuditLogTagSupport;
 import com.ruoyi.system.domain.SysOperLog;
-import com.ruoyi.system.service.ISysLogininforService;
 import com.ruoyi.system.service.ISysOperLogService;
 
 /**
@@ -47,6 +48,8 @@ public class AsyncFactory
     {
         final String userAgent = ServletUtils.getRequest().getHeader("User-Agent");
         final String ip = IpUtils.getIpAddr();
+        // 在提交异步任务前先固化当前用户名的重试次数，避免连续失败时被异步执行时序覆盖。
+        final Integer retryCount = getLoginRetryCount(username);
         return new TimerTask()
         {
             @Override
@@ -104,7 +107,8 @@ public class AsyncFactory
 
                 // 设置其他默认值
                 operLog.setOperatorType(OperatorType.MANAGE.ordinal()); // 操作类别：后台用户
-                operLog.setMethod("com.ruoyi.framework.web.service.SysLoginService.login()"); // 模拟一个方法名
+                operLog.setMethod("com.ruoyi.framework.web.service.SysLoginService.login()");// 模拟一个方法名
+                AuditLogTagSupport.tagLoginOperLog(operLog, status, retryCount);
 
                 // 插入到操作日志表
                 SpringUtils.getBean(ISysOperLogService.class).insertOperlog(operLog);
@@ -139,5 +143,70 @@ public class AsyncFactory
                 }
             }
         };
+    }
+
+    private static Integer getLoginRetryCount(String username)
+    {
+        if (StringUtils.isBlank(username))
+        {
+            return 0;
+        }
+        try
+        {
+            RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+            String normalizedUsername = StringUtils.trim(username);
+
+            Integer retryCount = readRetryCount(redisCache, CacheConstants.PWD_ERR_CNT_KEY + username);
+            if (retryCount != null)
+            {
+                return retryCount;
+            }
+
+            if (!StringUtils.equals(username, normalizedUsername))
+            {
+                retryCount = readRetryCount(redisCache, CacheConstants.PWD_ERR_CNT_KEY + normalizedUsername);
+                if (retryCount != null)
+                {
+                    return retryCount;
+                }
+            }
+
+            Collection<String> cacheKeys = redisCache.keys(CacheConstants.PWD_ERR_CNT_KEY + "*");
+            if (cacheKeys != null)
+            {
+                for (String cacheKey : cacheKeys)
+                {
+                    String cachedUsername = StringUtils.removeStart(cacheKey, CacheConstants.PWD_ERR_CNT_KEY);
+                    if (StringUtils.equalsIgnoreCase(normalizedUsername, StringUtils.trim(cachedUsername)))
+                    {
+                        retryCount = readRetryCount(redisCache, cacheKey);
+                        if (retryCount != null)
+                        {
+                            return retryCount;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return 0;
+    }
+
+    private static Integer readRetryCount(RedisCache redisCache, String cacheKey)
+    {
+        Object cacheValue = redisCache.getCacheObject(cacheKey);
+        if (cacheValue == null)
+        {
+            return null;
+        }
+        if (cacheValue instanceof Number)
+        {
+            return ((Number) cacheValue).intValue();
+        }
+
+        String retryCountText = StringUtils.trim(String.valueOf(cacheValue));
+        return StringUtils.isNumeric(retryCountText) ? Integer.valueOf(retryCountText) : null;
     }
 }

@@ -36,14 +36,12 @@
             <artifactId>swagger-models</artifactId>
             <version>1.6.2</version>
         </dependency>
-
-         <!-- Mysql驱动包 -->
+        <!-- 核心模块-->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-common</artifactId>
         </dependency>
 
-        <!-- 核心模块-->
         <dependency>
             <groupId>com.ruoyi</groupId>
             <artifactId>ruoyi-framework</artifactId>
@@ -117,7 +115,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.5.15</version>
                 <configuration>
-                    <fork>true</fork> <!-- 如果没有该配置，devtools不会生效 -->
+<!--                    <fork>true</fork> &lt;!&ndash; 如果没有该配置，devtools不会生效 &ndash;&gt;-->
                     <!-- 【核心配置】告诉 Maven 打包时把 scope 为 system 的依赖也打进 jar 包里 -->
                     <includeSystemScope>true</includeSystemScope>
                 </configuration>

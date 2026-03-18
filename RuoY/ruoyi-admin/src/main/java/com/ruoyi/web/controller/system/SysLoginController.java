@@ -12,10 +12,7 @@ import com.ruoyi.system.domain.SysLogininfor;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.service.ISysLogininforService;
 import com.ruoyi.system.service.ISysNoticeService;
-import nl.basjes.parse.useragent.UserAgent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.devtools.classpath.ClassPathChangedEvent;
-import org.springframework.context.ApplicationListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,8 +64,6 @@ public class SysLoginController
     @Autowired
     private ISysNoticeService noticeService;
 
-    @Autowired
-    private ApplicationListener<ClassPathChangedEvent> restartingClassPathChangedEventListener;
 
     /**
      * 登录方法

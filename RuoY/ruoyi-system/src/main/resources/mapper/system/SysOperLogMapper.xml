@@ -21,16 +21,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="errorMsg"       column="error_msg"      />
 		<result property="operTime"       column="oper_time"      />
 		<result property="costTime"       column="cost_time"      />
+		<result property="eventType"      column="event_type"     />
+		<result property="riskLevel"      column="risk_level"     />
+		<result property="bizCategory"    column="biz_category"   />
+		<result property="highlightTag"   column="highlight_tag"  />
 	</resultMap>
 
 	<sql id="selectOperLogVo">
-        select oper_id, title, business_type, method, request_method, operator_type, oper_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, oper_time, cost_time
+        select oper_id, title, business_type, method, request_method, operator_type, oper_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, oper_time, cost_time, event_type, risk_level, biz_category, highlight_tag
         from sys_oper_log
     </sql>
     
 	<insert id="insertOperlog" parameterType="SysOperLog">
-		insert into sys_oper_log(title, business_type, method, request_method, operator_type, oper_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, cost_time, oper_time)
-        values (#{title}, #{businessType}, #{method}, #{requestMethod}, #{operatorType}, #{operName}, #{operUrl}, #{operIp}, #{operLocation}, #{operParam}, #{jsonResult}, #{status}, #{errorMsg}, #{costTime}, sysdate())
+		insert into sys_oper_log(title, business_type, method, request_method, operator_type, oper_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, cost_time, oper_time, event_type, risk_level, biz_category, highlight_tag)
+        values (#{title}, #{businessType}, #{method}, #{requestMethod}, #{operatorType}, #{operName}, #{operUrl}, #{operIp}, #{operLocation}, #{operParam}, #{jsonResult}, #{status}, #{errorMsg}, #{costTime}, sysdate(), #{eventType}, #{riskLevel}, #{bizCategory}, #{highlightTag})
 	</insert>
 	
 	<select id="selectOperLogList" parameterType="SysOperLog" resultMap="SysOperLogResult">
@@ -56,6 +60,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			</if>
 			<if test="operName != null and operName != ''">
 				AND oper_name like concat('%', #{operName}, '%')
+			</if>
+			<if test="eventType != null and eventType != ''">
+				AND event_type = #{eventType}
+			</if>
+			<if test="riskLevel != null">
+				AND risk_level = #{riskLevel}
+			</if>
+			<if test="bizCategory != null and bizCategory != ''">
+				AND biz_category = #{bizCategory}
+			</if>
+			<if test="highlightTag != null and highlightTag != ''">
+				AND highlight_tag like concat('%', #{highlightTag}, '%')
 			</if>
 			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
 				AND oper_time &gt;= #{params.beginTime}
