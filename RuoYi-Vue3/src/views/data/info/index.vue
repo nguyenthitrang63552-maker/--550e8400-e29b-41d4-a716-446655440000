@@ -1009,16 +1009,16 @@ getList()
 }
 
 .toolbar-btn--danger {
-  color: #5f6978;
-  border-color: #d7dee9;
-  background: #f7f9fc;
+  color: #fff;
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .toolbar-btn--danger:hover,
 .toolbar-btn--danger:focus {
-  color: #ef4444;
+  color: #fff;
   border-color: #ef4444;
-  background: #fff7f7;
+  background: linear-gradient(135deg, #f87171, #ef4444);
 }
 
 .info-table-wrap {
@@ -1266,29 +1266,29 @@ getList()
 }
 
 .action-btn--muted {
-  color: #717b8b;
-  border-color: #cfd7e3;
-  background: #f1f4f8;
+  color: #4b5563;
+  border-color: #d1d5db;
+  background: #f3f4f6;
 }
 
 .action-btn--muted:hover,
 .action-btn--muted:focus {
-  color: #5f6978;
-  border-color: #bcc7d6;
-  background: #e8edf4;
+  color: #374151;
+  border-color: #cbd5e1;
+  background: #e5e7eb;
 }
 
 .action-btn--danger {
-  color: #5f6978;
-  border-color: #d7dee9;
-  background: #f7f9fc;
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff1f2;
 }
 
 .action-btn--danger:hover,
 .action-btn--danger:focus {
-  color: #ef4444;
-  border-color: #ef4444;
-  background: #fff7f7;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #ffe4e6;
 }
 
 .info-detail-drawer :deep(.el-drawer__body) {

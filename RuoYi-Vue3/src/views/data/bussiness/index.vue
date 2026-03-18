@@ -1334,29 +1334,29 @@ onMounted(()=>{
 }
 
 .toolbar-action-btn--import {
-  background: linear-gradient(135deg, #2f8f5b, #226e45);
+  background: linear-gradient(135deg, #b7d64a, #7ea61d);
 }
 
 .toolbar-action-btn--import:hover,
 .toolbar-action-btn--import:focus {
-  background: linear-gradient(135deg, #379f66, #287c4f);
+  background: linear-gradient(135deg, #c7e35e, #8bb724);
 }
 
 .toolbar-action-btn--export {
-  background: linear-gradient(135deg, #4f7cff, #365edc);
+  background: linear-gradient(135deg, #9b6dff, #7c3aed);
 }
 
 .toolbar-action-btn--export:hover,
 .toolbar-action-btn--export:focus {
-  background: linear-gradient(135deg, #5e89ff, #4369e3);
+  background: linear-gradient(135deg, #ad84ff, #8b5cf6);
 }
 
 .toolbar-action-btn--delete {
-  background: linear-gradient(135deg, #f56c6c, #dd5151);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .toolbar-action-btn--delete:hover,
 .toolbar-action-btn--delete:focus {
-  background: linear-gradient(135deg, #ff7f7f, #e35f5f);
+  background: linear-gradient(135deg, #f87171, #ef4444);
 }
 </style>

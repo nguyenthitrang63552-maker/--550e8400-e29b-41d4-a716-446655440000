@@ -1,5 +1,37 @@
 // cover some element-ui styles
 
+:root {
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-fill-soft: #f3f4f6;
+  --admin-border: #d7dee7;
+  --admin-border-strong: #c4ced9;
+  --admin-text: #111827;
+  --admin-text-muted: #6b7280;
+  --admin-placeholder: #9ca3af;
+  --admin-table-header: #f3f4f6;
+  --admin-table-hover: #f9fafb;
+  --admin-primary-start: #2f8f5b;
+  --admin-primary-end: #226e45;
+  --admin-primary-shadow: rgba(34, 110, 69, 0.26);
+}
+
+html.dark {
+  --admin-surface: #1f2937;
+  --admin-surface-muted: #111827;
+  --admin-fill-soft: #0f172a;
+  --admin-border: #334155;
+  --admin-border-strong: #475569;
+  --admin-text: #e5e7eb;
+  --admin-text-muted: #94a3b8;
+  --admin-placeholder: #64748b;
+  --admin-table-header: #1e293b;
+  --admin-table-hover: #172033;
+  --admin-primary-start: #2f8f5b;
+  --admin-primary-end: #226e45;
+  --admin-primary-shadow: rgba(15, 23, 42, 0.38);
+}
+
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
   font-weight: 400 !important;
@@ -93,4 +125,124 @@
 
 .el-dropdown .el-dropdown-link{
   color: var(--el-color-primary) !important;
+}
+
+.app-container,
+.el-dialog,
+.el-drawer {
+  .el-form--inline .el-form-item {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    vertical-align: top;
+  }
+
+  .el-form--inline .el-form-item__label {
+    width: auto !important;
+    min-width: fit-content;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    word-break: keep-all;
+    line-height: 40px;
+    padding-right: 12px;
+  }
+
+  .el-form--inline .el-form-item__content {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+    line-height: 40px;
+  }
+
+  .el-form-item__label {
+    color: var(--admin-text);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-date-editor.el-input__wrapper,
+  .el-date-editor .el-input__wrapper,
+  .el-textarea__inner,
+  .el-input-number,
+  .el-tree-select__wrapper {
+    background: var(--admin-surface);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px var(--admin-border) inset;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-date-editor.el-input__wrapper,
+  .el-date-editor .el-input__wrapper,
+  .el-tree-select__wrapper {
+    min-height: 40px;
+  }
+
+  .el-textarea__inner {
+    min-height: 96px;
+    padding: 10px 12px;
+  }
+
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select__selected-item,
+  .el-range-input,
+  .el-textarea__inner::placeholder,
+  .el-input__inner::placeholder,
+  .el-range-input::placeholder {
+    color: var(--admin-text);
+  }
+
+  .el-input__inner::placeholder,
+  .el-textarea__inner::placeholder,
+  .el-select__placeholder,
+  .el-range-input::placeholder,
+  .el-input__prefix,
+  .el-input__suffix,
+  .el-select__caret,
+  .el-date-editor .el-input__prefix {
+    color: var(--admin-placeholder);
+  }
+
+  .el-input__wrapper.is-focus,
+  .el-select__wrapper.is-focused,
+  .el-date-editor.el-input__wrapper.is-focus,
+  .el-date-editor .el-input__wrapper.is-focus,
+  .el-textarea__inner:focus,
+  .el-input-number:focus-within {
+    background: var(--admin-surface);
+    box-shadow: 0 0 0 1px #94a3b8 inset, 0 0 0 4px rgba(148, 163, 184, 0.16);
+  }
+
+  .el-form-item.is-error {
+    .el-input__wrapper,
+    .el-select__wrapper,
+    .el-date-editor.el-input__wrapper,
+    .el-date-editor .el-input__wrapper,
+    .el-textarea__inner,
+    .el-input-number {
+      box-shadow: 0 0 0 1px #f56c6c inset, 0 0 0 4px rgba(245, 108, 108, 0.14);
+    }
+  }
+
+  .el-input.is-disabled .el-input__wrapper,
+  .el-select.is-disabled .el-select__wrapper,
+  .el-textarea.is-disabled .el-textarea__inner,
+  .el-date-editor.is-disabled,
+  .el-date-editor.is-disabled .el-input__wrapper {
+    background: var(--admin-fill-soft);
+    box-shadow: 0 0 0 1px var(--admin-border) inset;
+  }
+
+  .el-input.is-disabled .el-input__inner,
+  .el-select.is-disabled .el-select__selected-item,
+  .el-textarea.is-disabled .el-textarea__inner,
+  .el-input.is-disabled .el-input__inner::placeholder {
+    color: var(--admin-text-muted);
+    -webkit-text-fill-color: var(--admin-text-muted);
+  }
 }

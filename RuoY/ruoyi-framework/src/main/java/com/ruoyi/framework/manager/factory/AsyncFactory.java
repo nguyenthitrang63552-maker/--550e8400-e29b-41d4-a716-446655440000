@@ -3,9 +3,12 @@ package com.ruoyi.framework.manager.factory;
 import java.util.Date;
 import java.util.TimerTask;
 
+import com.alibaba.fastjson2.JSON;
 import com.ruoyi.common.enums.BusinessStatus;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.enums.OperatorType;
+import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.http.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.ruoyi.common.constant.Constants;
@@ -115,16 +118,25 @@ public class AsyncFactory
      * @param operLog 操作日志信息
      * @return 任务task
      */
-    public static TimerTask recordOper(final SysOperLog operLog)
-    {
-        return new TimerTask()
-        {
+
+    public static TimerTask recordOper(final SysOperLog operLog) {
+        return new TimerTask() {
             @Override
-            public void run()
-            {
-                // 远程查询操作地点
+            public void run() {
+                // 1. 若依原有的：保存到本地数据库
                 operLog.setOperLocation(AddressUtils.getRealAddressByIP(operLog.getOperIp()));
                 SpringUtils.getBean(ISysOperLogService.class).insertOperlog(operLog);
+                // 2. 新增的：推送到甲方系统 (伪代码)
+                try {
+                    String targetUrl = "http://party-a-api.com/api/logs/receive";
+                    // 将 operLog 转换为 JSON 字符串
+                    String jsonLog = JSON.toJSONString(operLog);
+                    // 使用 HttpUtils 或 RestTemplate 发送 POST 请求
+                    HttpUtils.sendPost(targetUrl, jsonLog);
+                } catch (Exception e) {
+                    // 注意：推送失败不能影响本地业务，只打印错误即可
+                    throw new ServiceException();
+                }
             }
         };
     }

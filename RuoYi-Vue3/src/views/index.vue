@@ -226,7 +226,13 @@ const getLineOption = (history = networkHistory.value) => ({
       ].join('<br/>');
     }
   },
-  grid: { top: 10, bottom: 20, left: 48, right: 10 },
+  grid: {
+    top: 12,
+    bottom: 18,
+    left: 10,
+    right: 10,
+    containLabel: true
+  },
   xAxis: {
     type: 'category',
     show: false,
@@ -236,8 +242,11 @@ const getLineOption = (history = networkHistory.value) => ({
   yAxis: {
     type: 'value',
     min: 0,
+    splitNumber: 4,
     splitLine: { show: false },
     axisLabel: {
+      margin: 10,
+      hideOverlap: true,
       formatter: (value) => formatNetRate(value)
     }
   },

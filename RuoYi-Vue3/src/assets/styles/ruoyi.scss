@@ -83,15 +83,50 @@
 }
 
 .el-table {
+  --el-table-border-color: var(--admin-border);
+  --el-table-header-bg-color: var(--admin-table-header);
+  --el-table-header-text-color: var(--admin-text);
+  --el-table-row-hover-bg-color: var(--admin-table-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--admin-surface);
+
   .el-table__header-wrapper, .el-table__fixed-header-wrapper {
     th {
       word-break: break-word;
-      background-color: #f8f8f9 !important;
-      color: #515a6e;
-      height: 40px !important;
+      background-color: var(--admin-table-header) !important;
+      color: var(--admin-text);
+      height: 48px !important;
       font-size: 13px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--admin-border);
     }
   }
+
+  .el-table__inner-wrapper::before {
+    background-color: var(--admin-border);
+  }
+
+  th.el-table__cell,
+  td.el-table__cell {
+    border-right: 1px solid #edf1f5;
+  }
+
+  tr > .el-table__cell:last-child {
+    border-right: none;
+  }
+
+  td.el-table__cell {
+    height: 46px;
+    color: #374151;
+    border-bottom-color: #e9edf2;
+  }
+
+  .el-table__body tr:hover > td.el-table__cell {
+    background: var(--admin-table-hover);
+  }
+
   .el-table__body-wrapper {
     .el-button [class*="el-icon-"] + span {
       margin-left: 1px;
@@ -150,10 +185,91 @@
   width: 100%;
 }
 
-.el-table .fixed-width .el-button--small {
-  padding-left: 0;
-  padding-right: 0;
-  width: inherit;
+.el-table .fixed-width {
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .el-button,
+  .el-button--small,
+  .el-button--default,
+  .el-button--primary,
+  .el-button--danger {
+    min-width: 40px;
+    height: 36px;
+    padding: 0 14px;
+    margin: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 0;
+    background: #f3f4f6;
+    color: #4b5563;
+    box-shadow: none;
+  }
+
+  .el-button.is-link,
+  .el-button--primary.is-link,
+  .el-button--danger.is-link {
+    min-width: 40px;
+    height: 36px;
+    padding: 0 14px;
+    margin: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 0;
+    background: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+  }
+
+  .el-button + .el-button {
+    margin-left: -1px;
+  }
+
+  .el-button:first-child {
+    border-radius: 10px 0 0 10px;
+  }
+
+  .el-button:last-child {
+    border-radius: 0 10px 10px 0;
+  }
+
+  .el-button:only-child {
+    border-radius: 10px;
+  }
+
+  .el-button:hover,
+  .el-button:focus {
+    position: relative;
+    z-index: 1;
+    border-color: #cbd5e1;
+    background: #e5e7eb;
+    color: #374151;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .el-button--danger,
+  .el-button--danger.is-link {
+    border-color: #fecaca;
+    background: #fff1f2;
+    color: #dc2626;
+  }
+
+  .el-button--danger:hover,
+  .el-button--danger:focus,
+  .el-button--danger.is-link:hover,
+  .el-button--danger.is-link:focus {
+    border-color: #fca5a5;
+    background: #ffe4e6;
+    color: #b91c1c;
+  }
+
+  .el-button .el-icon {
+    font-size: 16px;
+  }
 }
 
 /* horizontal el menu */

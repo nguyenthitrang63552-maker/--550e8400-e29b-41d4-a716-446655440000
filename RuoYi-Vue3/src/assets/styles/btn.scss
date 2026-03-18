@@ -97,3 +97,169 @@
   font-size: 14px;
   border-radius: 4px;
 }
+
+.app-container,
+.el-dialog,
+.el-drawer {
+  .el-button {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .el-button:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle) {
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      filter 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .el-button.el-button--small:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle) {
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 9px;
+  }
+
+  .el-button:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+  }
+
+  .el-button:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle):active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  }
+
+  .el-button.is-disabled:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle),
+  .el-button.is-disabled:not(.is-link):not(.is-text):not(.el-button--text):not(.is-circle):hover {
+    transform: none;
+    box-shadow: none;
+    filter: none;
+  }
+
+  .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
+    color: #fff;
+    border: none;
+    background: linear-gradient(135deg, var(--admin-primary-start), var(--admin-primary-end));
+    box-shadow: 0 10px 20px var(--admin-primary-shadow), 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+
+  .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):hover,
+  .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):focus {
+    color: #fff;
+    background: linear-gradient(135deg, #379f66, #287c4f);
+  }
+
+  .el-button--default:not(.is-link):not(.is-text):not(.el-button--text),
+  .el-button--info:not(.is-link):not(.is-text):not(.el-button--text),
+  .el-button--primary.is-plain:not(.is-link):not(.is-text):not(.el-button--text) {
+    color: var(--admin-text);
+    border-color: var(--admin-border);
+    background: var(--admin-surface);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  .el-button--default:not(.is-link):not(.is-text):not(.el-button--text):hover,
+  .el-button--info:not(.is-link):not(.is-text):not(.el-button--text):hover,
+  .el-button--primary.is-plain:not(.is-link):not(.is-text):not(.el-button--text):hover {
+    color: var(--admin-text);
+    border-color: var(--admin-border-strong);
+    background: var(--admin-surface-muted);
+  }
+
+  .el-button--danger:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
+    color: #fff;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 10px 18px rgba(220, 38, 38, 0.22);
+  }
+
+  .el-button--danger:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):hover,
+  .el-button--danger:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):focus {
+    color: #fff;
+    background: linear-gradient(135deg, #f87171, #ef4444);
+  }
+
+  .el-button--success:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
+    color: #fff;
+    border: none;
+    background: linear-gradient(135deg, #34a853, #23873d);
+    box-shadow: 0 10px 18px rgba(35, 135, 61, 0.22);
+  }
+
+  .el-button--warning:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
+    color: #fff;
+    border: none;
+    background: linear-gradient(135deg, #f6ad3c, #df8f16);
+    box-shadow: 0 10px 18px rgba(223, 143, 22, 0.22);
+  }
+}
+
+.toolbar-action-btn {
+  min-width: 96px;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.toolbar-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
+  filter: brightness(1.03);
+}
+
+.toolbar-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+}
+
+.toolbar-action-btn:disabled,
+.toolbar-action-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.toolbar-action-btn--import {
+  background: linear-gradient(135deg, #b7d64a, #7ea61d);
+}
+
+.toolbar-action-btn--import:hover,
+.toolbar-action-btn--import:focus {
+  background: linear-gradient(135deg, #c7e35e, #8bb724);
+}
+
+.toolbar-action-btn--export {
+  background: linear-gradient(135deg, #9b6dff, #7c3aed);
+}
+
+.toolbar-action-btn--export:hover,
+.toolbar-action-btn--export:focus {
+  background: linear-gradient(135deg, #ad84ff, #8b5cf6);
+}
+
+.toolbar-action-btn--delete {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.toolbar-action-btn--delete:hover,
+.toolbar-action-btn--delete:focus {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
