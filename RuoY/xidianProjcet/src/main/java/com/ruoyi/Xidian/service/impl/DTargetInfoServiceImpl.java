@@ -2,6 +2,8 @@ package com.ruoyi.Xidian.service.impl;
 
 import java.util.List;
 
+import com.ruoyi.common.constant.CacheConstants;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
     @Autowired
     private DTargetInfoMapper dTargetInfoMapper;
 
+    @Autowired
+    private RedisCache redisCache;
+
     /**
      * 查询测试目标信息
      *
@@ -30,7 +35,21 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
     @Override
     public DTargetInfo selectDTargetInfoByTargetId(String targetId)
     {
-        return dTargetInfoMapper.selectDTargetInfoByTargetId(targetId);
+        // 先从Redis缓存中获取
+        DTargetInfo dTargetInfo = redisCache.getCacheObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId);
+        if (dTargetInfo != null) {
+            return dTargetInfo;
+        }
+
+        // 如果缓存中没有，则从数据库查询
+        dTargetInfo = dTargetInfoMapper.selectDTargetInfoByTargetId(targetId);
+
+        // 将查询结果缓存到Redis中
+        if (dTargetInfo != null) {
+            redisCache.setCacheObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId, dTargetInfo);
+        }
+
+        return dTargetInfo;
     }
 
     /**
@@ -68,6 +87,8 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
     public int updateDTargetInfo(DTargetInfo dTargetInfo)
     {
         dTargetInfo.setUpdateTime(DateUtils.getNowDate());
+        // 删除缓存中的数据
+        redisCache.deleteObject(CacheConstants.EXPERIMENT_TARGET_KEY + dTargetInfo.getTargetId());
         return dTargetInfoMapper.updateDTargetInfo(dTargetInfo);
     }
 
@@ -80,6 +101,10 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
     @Override
     public int deleteDTargetInfoByTargetIds(String[] targetIds)
     {
+        // 删除缓存中的数据
+        for (String targetId : targetIds) {
+            redisCache.deleteObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId);
+        }
         return dTargetInfoMapper.deleteDTargetInfoByTargetIds(targetIds);
     }
 
@@ -92,6 +117,8 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
     @Override
     public int deleteDTargetInfoByTargetId(String targetId)
     {
+        // 删除缓存中的数据
+        redisCache.deleteObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId);
         return dTargetInfoMapper.deleteDTargetInfoByTargetId(targetId);
     }
      /**

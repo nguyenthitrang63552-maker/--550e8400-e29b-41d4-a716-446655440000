@@ -415,7 +415,7 @@
         </el-dialog>
 
         <!-- 文件管理器预览对话框 -->
-        <el-dialog v-model="fileManagerPreviewVisible" :title="`预览: ${fileManagerPreviewFile?.name || ''}`" width="70%" append-to-body>
+        <el-dialog v-model="fileManagerPreviewVisible" :title="`预览: ${fileManagerPreviewFile?.name || ''}`" width="88%" top="4vh" append-to-body>
             <component :is="fileManagerPreviewComponent" :file="fileManagerPreviewFileInfo" v-if="fileManagerPreviewFile" />
             <el-empty v-else description="暂无预览内容" />
             <template #footer>
@@ -424,12 +424,12 @@
         </el-dialog>
 
         <!-- 业务数据详情 (文件预览) 对话框 -->
-        <el-dialog v-model="detailVisible" :title="detailTitle" width="70%" append-to-body>
+        <el-dialog v-model="detailVisible" :title="detailTitle" width="88%" top="4vh" append-to-body>
             <div v-if="detailFile">
-                <!-- CSV/Excel走分页预览，避免一次性渲染造成卡顿 -->
+                <!-- CSV/Excel走分页表格预览，TXT走逐行文本预览，避免一次性渲染造成卡顿 -->
                 <div v-if="isDetailTabularFile">
                     <div v-loading="detailPreviewLoading">
-                        <el-table v-if="detailTableRows.length > 0" :data="detailTableRows" border stripe height="500">
+                        <el-table v-if="detailTableRows.length > 0" :data="detailTableRows" border stripe height="62vh">
                             <el-table-column
                                 v-for="header in detailTableColumns"
                                 :key="header"
@@ -438,6 +438,28 @@
                                 show-overflow-tooltip
                             />
                         </el-table>
+                        <el-empty v-else description="暂无预览数据" />
+                    </div>
+                    <pagination
+                        v-show="detailPreviewTotal > 0"
+                        :total="detailPreviewTotal"
+                        v-model:page="detailPreviewPageNum"
+                        v-model:limit="detailPreviewPageSize"
+                        @pagination="loadDetailTablePreview"
+                    />
+                </div>
+                <div v-else-if="isDetailTextFile">
+                    <div v-loading="detailPreviewLoading">
+                        <div v-if="detailTextLines.length > 0" class="detail-text-preview">
+                            <div
+                                v-for="(line, index) in detailTextLines"
+                                :key="`${detailPreviewPageNum}-${index}`"
+                                class="detail-text-preview__line"
+                            >
+                                <span class="detail-text-preview__line-number">{{ detailPreviewLineStart + index + 1 }}</span>
+                                <pre class="detail-text-preview__line-content">{{ line }}</pre>
+                            </div>
+                        </div>
                         <el-empty v-else description="暂无预览数据" />
                     </div>
                     <pagination
@@ -734,8 +756,6 @@ const previewDataFilePath = computed(() => {
   return buildRelativeDataFilePath(extractDirPath(originalPath), fileName, suffix)
 })
 
-// --- 文件管理器逻辑开始 ---
-
 const fileManagerPreviewFileInfo = computed(() => {
   if (!fileManagerPreviewFile.value) return null
   return {
@@ -750,6 +770,16 @@ const fileManagerPreviewComponent = computed(() => getPreviewComponent(fileManag
 
 const detailTableColumns = computed(() => Object.keys(detailTableRows.value[0] || {}))
 const isDetailTabularFile = computed(() => isTabularFile(detailFile.value))
+const isDetailTextFile = computed(() => isTextFile(detailFile.value))
+const detailTextLines = computed(() =>
+  detailTableRows.value.map(row => {
+    if (row == null) return ''
+    if (typeof row === 'string') return row
+    if (typeof row === 'object') return Object.values(row).join(' ')
+    return String(row)
+  })
+)
+const detailPreviewLineStart = computed(() => (detailPreviewPageNum.value - 1) * detailPreviewPageSize.value)
 const detailPreviewComponent = computed(() => getPreviewComponent(detailFile.value))
 
 function getPreviewFileName(file) {
@@ -762,6 +792,11 @@ function getPreviewFileName(file) {
 function isTabularFile(file) {
   const fileName = getPreviewFileName(file)
   return fileName.endsWith('.csv') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx')
+}
+
+function isTextFile(file) {
+  const fileName = getPreviewFileName(file)
+  return fileName.endsWith('.txt')
 }
 
 function getPreviewComponent(file) {
@@ -1099,12 +1134,14 @@ function handleView(row) {
       experimentId: row.experimentId
     }
 
-    if (isTabularFile(row)) {
+    if (isTabularFile(row) || isTextFile(row)) {
       const fileName = getPreviewFileName(row)
       if (fileName.endsWith('.csv')) {
         detailTitle.value = `CSV文件预览: ${row.dataName}`
-      } else {
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
         detailTitle.value = `Excel文件预览: ${row.dataName}`
+      } else {
+        detailTitle.value = `Txt文件预览: ${row.dataName}`
       }
       resetDetailTablePreview()
       detailVisible.value = true
@@ -1358,5 +1395,45 @@ onMounted(()=>{
 .toolbar-action-btn--delete:hover,
 .toolbar-action-btn--delete:focus {
   background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.detail-text-preview {
+  height: 62vh;
+  padding: 8px 0;
+  overflow-y: auto;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.detail-text-preview__line {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.detail-text-preview__line:last-child {
+  border-bottom: none;
+}
+
+.detail-text-preview__line-number {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: right;
+  user-select: none;
+}
+
+.detail-text-preview__line-content {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--el-text-color-primary);
+  font-family: Consolas, 'Courier New', monospace;
 }
 </style>

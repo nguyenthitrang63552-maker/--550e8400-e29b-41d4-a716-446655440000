@@ -1,55 +1,62 @@
 package com.ruoyi.Xidian.service.impl;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-
+import com.ruoyi.Xidian.domain.DExperimentInfo;
 import com.ruoyi.Xidian.domain.DProjectInfo;
 import com.ruoyi.Xidian.domain.TreeTableVo;
+import com.ruoyi.Xidian.mapper.DExperimentInfoMapper;
 import com.ruoyi.Xidian.mapper.DProjectInfoMapper;
+import com.ruoyi.Xidian.service.IDExperimentInfoService;
+import com.ruoyi.Xidian.support.PathLockManager;
 import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.constant.CacheConstants;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.ruoyi.Xidian.mapper.DExperimentInfoMapper;
-import com.ruoyi.Xidian.domain.DExperimentInfo;
-import com.ruoyi.Xidian.service.IDExperimentInfoService;
 
-/**
- * 试验信息主Service业务层处理
- * 
- * @author ruoyi
- * @date 2026-01-23
- */
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Stream;
+
 @Service
-public class DExperimentInfoServiceImpl implements IDExperimentInfoService {
+public class DExperimentInfoServiceImpl implements IDExperimentInfoService
+{
     @Autowired
     private DExperimentInfoMapper dExperimentInfoMapper;
+
     @Autowired
     private DProjectInfoMapper dProjectInfoMapper;
 
+    @Autowired
+    private RedisCache redisCache;
+
+    @Autowired
+    private PathLockManager pathLockManager;
+
     private final String profile = RuoYiConfig.getProfile() + "/data";
 
-    /**
-     * 查询试验信息主树列表,并完全由后端造树
-     *
-     * @param treeTableVo 试验信息
-     * @return 试验信息
-     */
     @Override
-    public List<TreeTableVo> selectDExperimentInfoTree(TreeTableVo treeTableVo) {
+    public List<TreeTableVo> selectDExperimentInfoTree(TreeTableVo treeTableVo)
+    {
         List<TreeTableVo> treeTables = new ArrayList<>();
-        Map<Long,Integer> hashtable = new HashMap<>();
-        int Index=0;
-        if (treeTableVo.getId() == null || !treeTableVo.getId().matches(".*[a-zA-Z-].*")) {
-            // 查询符合查询条件的项目信息
-            DProjectInfo dProjectInfo = new DProjectInfo();
+        Map<Long, Integer> hashtable = new HashMap<>();
+        int index = 0;
 
-            if (StringUtils.isNotEmpty(treeTableVo.getId())) {
+        if (treeTableVo.getId() == null || !treeTableVo.getId().matches(".*[a-zA-Z-].*"))
+        {
+            DProjectInfo dProjectInfo = new DProjectInfo();
+            if (StringUtils.isNotEmpty(treeTableVo.getId()))
+            {
                 dProjectInfo.setProjectId(Long.valueOf(treeTableVo.getId()));
             }
             dProjectInfo.setProjectName(treeTableVo.getName());
@@ -57,238 +64,377 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService {
             dProjectInfo.setCreateBy(treeTableVo.getCreateBy());
             List<DProjectInfo> dProjectInfos = dProjectInfoMapper.selectDProjectInfoList(dProjectInfo);
 
-
-            for (DProjectInfo dProjectInfo1 : dProjectInfos) {
+            for (DProjectInfo projectInfo : dProjectInfos)
+            {
                 TreeTableVo vo = new TreeTableVo();
-                vo.setId(dProjectInfo1.getProjectId().toString());
-                vo.setName(dProjectInfo1.getProjectName());
-                vo.setCreateBy(dProjectInfo1.getCreateBy());
-                vo.setCreateTime(dProjectInfo1.getCreateTime());
-                vo.setContentDesc(dProjectInfo1.getProjectContentDesc());
-                vo.setPath(dProjectInfo1.getPath());
+                vo.setId(projectInfo.getProjectId().toString());
+                vo.setName(projectInfo.getProjectName());
+                vo.setCreateBy(projectInfo.getCreateBy());
+                vo.setCreateTime(projectInfo.getCreateTime());
+                vo.setContentDesc(projectInfo.getProjectContentDesc());
+                vo.setPath(projectInfo.getPath());
                 vo.setParentId(0L);
                 vo.setAncestors("0");
                 vo.setType("project");
-                hashtable.put(dProjectInfo1.getProjectId(),Index);
-                Index++;
+                hashtable.put(projectInfo.getProjectId(), index);
+                index++;
                 treeTables.add(vo);
             }
         }
 
+        DExperimentInfo query = new DExperimentInfo();
+        query.setExperimentId(treeTableVo.getId());
+        query.setExperimentName(treeTableVo.getName());
+        query.setParams(treeTableVo.getParams());
+        query.setCreateBy(treeTableVo.getCreateBy());
+        List<DExperimentInfo> experimentInfos = dExperimentInfoMapper.selectDExperimentInfoList(query);
 
-        // 查询符合查询条件的试验信息
-        DExperimentInfo dExperimentInfo1 = new DExperimentInfo();
-        dExperimentInfo1.setExperimentId(treeTableVo.getId());
-        dExperimentInfo1.setExperimentName(treeTableVo.getName());
-        dExperimentInfo1.setParams(treeTableVo.getParams());
-        dExperimentInfo1.setCreateBy(treeTableVo.getCreateBy());
-        List<DExperimentInfo> dExperimentInfos = dExperimentInfoMapper.selectDExperimentInfoList(dExperimentInfo1);
-        for (DExperimentInfo dExperimentInfo : dExperimentInfos) {
+        for (DExperimentInfo experimentInfo : experimentInfos)
+        {
             TreeTableVo vo = new TreeTableVo();
-            vo.setId(dExperimentInfo.getExperimentId());
-            vo.setName(dExperimentInfo.getExperimentName());
-            vo.setTargetId(dExperimentInfo.getTargetId());
-            vo.setStartTime(dExperimentInfo.getStartTime());
-            vo.setTargetType(dExperimentInfo.getTargetType());
-            vo.setCreateBy(dExperimentInfo.getCreateBy());
-            vo.setCreateTime(dExperimentInfo.getCreateTime());
-            vo.setLocation(dExperimentInfo.getLocation());
-            vo.setContentDesc(dExperimentInfo.getContentDesc());
-            vo.setPath(dExperimentInfo.getPath());
-            vo.setParentId(dExperimentInfo.getProjectId());
-            vo.setAncestors("0," + dExperimentInfo.getProjectId());
+            vo.setId(experimentInfo.getExperimentId());
+            vo.setName(experimentInfo.getExperimentName());
+            vo.setTargetId(experimentInfo.getTargetId());
+            vo.setStartTime(experimentInfo.getStartTime());
+            vo.setTargetType(experimentInfo.getTargetType());
+            vo.setCreateBy(experimentInfo.getCreateBy());
+            vo.setCreateTime(experimentInfo.getCreateTime());
+            vo.setLocation(experimentInfo.getLocation());
+            vo.setContentDesc(experimentInfo.getContentDesc());
+            vo.setPath(experimentInfo.getPath());
+            vo.setParentId(experimentInfo.getProjectId());
+            vo.setAncestors("0," + experimentInfo.getProjectId());
             vo.setType("experiment");
-            int parentIndex = hashtable.getOrDefault(vo.getParentId(),-1);
-            // 如果父节点存在，将当前节点添加到父节点的子节点列表中,否则添加到根节点列表中
-            if(parentIndex!=-1){
+
+            int parentIndex = hashtable.getOrDefault(vo.getParentId(), -1);
+            if (parentIndex != -1)
+            {
                 ((List<TreeTableVo>) treeTables.get(parentIndex).getChildren()).add(vo);
-            }else{
+            }
+            else
+            {
                 treeTables.add(vo);
             }
         }
         return treeTables;
     }
 
-
-    /**
-     * 查询试验信息主
-     *
-     * @param experimentId 试验信息主主键
-     * @return 试验信息主
-     */
     @Override
-    public DExperimentInfo selectDExperimentInfoByExperimentId(String experimentId) {
-        return dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
+    public DExperimentInfo selectDExperimentInfoByExperimentId(String experimentId)
+    {
+        if (redisCache.getCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId) != null)
+        {
+            return redisCache.getCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+        }
+        DExperimentInfo dExperimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
+        if (dExperimentInfo != null)
+        {
+            redisCache.setCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId, dExperimentInfo);
+        }
+        return dExperimentInfo;
     }
 
-    /**
-     * 构建试验信息主树结构
-     */
-
     @Override
-    public List<DProjectInfo> buildDProjectInfoTree() {
-        //查询项目信息
+    public List<DProjectInfo> buildDProjectInfoTree()
+    {
         List<DProjectInfo> dProjectInfos = dProjectInfoMapper.selectDProjectInfoList(new DProjectInfo());
         DExperimentInfo dExperimentInfo = new DExperimentInfo();
-        for (DProjectInfo dProjectInfo : dProjectInfos) {
+        for (DProjectInfo dProjectInfo : dProjectInfos)
+        {
             dExperimentInfo.setProjectId(dProjectInfo.getProjectId());
             List<DExperimentInfo> dExperimentInfos = dExperimentInfoMapper.selectDExperimentInfoList(dExperimentInfo);
-            for (DExperimentInfo dExperimentInfo1 : dExperimentInfos) {
-                dExperimentInfo1.setParentId(dProjectInfo.getProjectId());
-                dExperimentInfo1.setParentName(dProjectInfo.getProjectName());
+            for (DExperimentInfo item : dExperimentInfos)
+            {
+                item.setParentId(dProjectInfo.getProjectId());
+                item.setParentName(dProjectInfo.getProjectName());
             }
             dProjectInfo.setChildren(dExperimentInfos);
         }
         return dProjectInfos;
     }
 
-    /**
-     * 查询试验信息主列表
-     *
-     * @param dExperimentInfo 试验信息主
-     * @return 试验信息主
-     */
     @Override
-    public List<DExperimentInfo> selectDExperimentInfoList(DExperimentInfo dExperimentInfo) {
+    public List<DExperimentInfo> selectDExperimentInfoList(DExperimentInfo dExperimentInfo)
+    {
         return dExperimentInfoMapper.selectDExperimentInfoList(dExperimentInfo);
     }
 
-    /**
-     * 新增试验信息主
-     *
-     * @param dExperimentInfo 试验信息主
-     * @return 结果
-     */
     @Override
-    public int insertDExperimentInfo(DExperimentInfo dExperimentInfo) {
-        String ProjectPath=dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo.getProjectId()).getPath();
-        String ExperimentPath= profile + ProjectPath + "/" + dExperimentInfo.getExperimentName();
-        String pathStr =dExperimentInfo.getExperimentName();
-        Path path= Paths.get(ExperimentPath);
-        if(!dExperimentInfo.getExperimentName().matches("^[a-zA-Z0-9_\\-\\u4e00-\\u9fa5]+$")) {
-            throw new ServiceException("试验名称只能包含字母、数字、下划线、短横线和中文字符");
+    public int insertDExperimentInfo(DExperimentInfo dExperimentInfo)
+    {
+        if (dExperimentInfo.getExperimentName() == null
+                || !dExperimentInfo.getExperimentName().matches("^[a-zA-Z0-9_\\-\\u4e00-\\u9fa5]+$"))
+        {
+            throw new ServiceException("试验名称无效");
         }
-        if(Files.exists(path)){
-            pathStr = dExperimentInfo.getExperimentName()+ UUID.randomUUID().toString().substring(0, 5);
-            path= Paths.get(profile + ProjectPath + "/" + pathStr);
+
+        DProjectInfo projectInfo = requireProject(dExperimentInfo.getProjectId());
+        String pathStr = dExperimentInfo.getExperimentName();
+        Path projectRoot = buildProjectRootPath(projectInfo.getPath());
+
+        while (true)
+        {
+            Path experimentPath = buildExperimentRootPath(projectInfo.getPath(), "/" + pathStr);
+            try (PathLockManager.LockHandle ignored = pathLockManager.lock(
+                    buildPaths(projectRoot),
+                    buildPaths(experimentPath)))
+            {
+                if (Files.exists(experimentPath))
+                {
+                    pathStr = dExperimentInfo.getExperimentName() + UUID.randomUUID().toString().substring(0, 5);
+                    continue;
+                }
+
+                try
+                {
+                    Files.createDirectories(experimentPath);
+                }
+                catch (IOException e)
+                {
+                    throw new ServiceException("创建试验目录失败: " + e.getMessage());
+                }
+
+                dExperimentInfo.setPath("/" + pathStr);
+                return dExperimentInfoMapper.insertDExperimentInfo(dExperimentInfo);
+            }
         }
-        try{
-            Files.createDirectories(path);
-        } catch (IOException e) {
-            throw new ServiceException("创建试验目录失败：" + e.getMessage());
-        }
-        //存储相对路径
-        dExperimentInfo.setPath("/"+pathStr);
-        return dExperimentInfoMapper.insertDExperimentInfo(dExperimentInfo);
     }
 
-    /**
-     * 修改试验信息主
-     *
-     * @param dExperimentInfo 试验信息主
-     * @return 结果
-     */
     @Override
-    public int updateDExperimentInfo(DExperimentInfo dExperimentInfo) {
+    public int updateDExperimentInfo(DExperimentInfo dExperimentInfo)
+    {
         dExperimentInfo.setUpdateTime(DateUtils.getNowDate());
-        //检查路径是否合法
-        if(!dExperimentInfo.getPath().startsWith("/")) {
-            throw new ServiceException("路径格式错误，必须以'/'开头");
+
+        if (!dExperimentInfo.getPath().startsWith("/"))
+        {
+            throw new ServiceException("Invalid experiment path");
         }
-        if(!dExperimentInfo.getPath().substring(1).matches("^[a-zA-Z0-9_\\-\\u4e00-\\u9fa5]+$")) {
-            throw new ServiceException("路径格式错误，只能包含字母、数字、下划线、短横线和中文字符");
+        if (!dExperimentInfo.getPath().substring(1).matches("^[a-zA-Z0-9_\\-\\u4e00-\\u9fa5]+$"))
+        {
+            throw new ServiceException("Invalid experiment path");
         }
-        String ExperimentId=dExperimentInfo.getExperimentId();
-        DExperimentInfo dExperimentInfo1 = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(ExperimentId);
-        String oldProjectPath = dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo1.getProjectId()).getPath();
-        String oldExperimentPath=dExperimentInfoMapper.selectDExperimentInfoByExperimentId(ExperimentId).getPath();
-        Path oldPath= Paths.get(profile + oldProjectPath + oldExperimentPath);
-        //修改文件路径
-        String newProjectPath=dProjectInfoMapper.selectDProjectInfoByProjectId(dExperimentInfo.getProjectId()).getPath();
-        String NewPath= profile + newProjectPath + dExperimentInfo.getPath();
-        Path newPath= Paths.get(NewPath);
-        //检查新路径是否已存在
-        if (Files.exists(newPath) && !newPath.equals(oldPath)) {
-            throw new ServiceException("新路径已存在，请重新输入");
+
+        String experimentId = dExperimentInfo.getExperimentId();
+        DExperimentInfo oldExperimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
+        if (oldExperimentInfo == null)
+        {
+            throw new ServiceException("Experiment not found");
         }
-        try {
-            if (!newPath.equals(oldPath)) {
-                Files.move(oldPath, newPath);
+
+        DProjectInfo oldProjectInfo = requireProject(oldExperimentInfo.getProjectId());
+        DProjectInfo newProjectInfo = requireProject(dExperimentInfo.getProjectId());
+        Path oldProjectRoot = buildProjectRootPath(oldProjectInfo.getPath());
+        Path newProjectRoot = buildProjectRootPath(newProjectInfo.getPath());
+        Path oldPath = buildExperimentRootPath(oldProjectInfo.getPath(), oldExperimentInfo.getPath());
+        Path newPath = buildExperimentRootPath(newProjectInfo.getPath(), dExperimentInfo.getPath());
+
+        try (PathLockManager.LockHandle ignored = pathLockManager.lock(
+                buildPaths(oldProjectRoot, newProjectRoot),
+                buildPaths(oldPath, newPath)))
+        {
+            if (Files.exists(newPath) && !newPath.equals(oldPath))
+            {
+                throw new ServiceException("目标试验路径已存在");
             }
-        } catch (IOException e) {
-            throw new ServiceException("修改试验目录失败：" + e.getMessage());
+
+            try
+            {
+                if (!newPath.equals(oldPath))
+                {
+                    Files.move(oldPath, newPath);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new ServiceException("更新试验目录失败: " + e.getMessage());
+            }
         }
+
+        redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
         return dExperimentInfoMapper.updateDExperimentInfo(dExperimentInfo);
     }
 
-    /**
-     * 批量删除试验信息主
-     *
-     * @param experimentIds 需要删除的试验信息主主键
-     * @return 结果
-     */
     @Override
-    public int deleteDExperimentInfoByExperimentIds(String[] experimentIds) {
-        if (experimentIds == null || experimentIds.length == 0) {
+    public int deleteDExperimentInfoByExperimentIds(String[] experimentIds)
+    {
+        if (experimentIds == null || experimentIds.length == 0)
+        {
             return 0;
         }
-        if(experimentIds[0].equals("0")){
+        if ("0".equals(experimentIds[0]))
+        {
             return 1;
         }
-        List<DExperimentInfo> experimentInfos = dExperimentInfoMapper.selectDExperimentInfoByExperimentIds(Arrays.asList(experimentIds));
-        if (experimentInfos.size() != experimentIds.length) {
-            throw new ServiceException("部分试验信息不存在，请刷新后重试");
+
+        List<DExperimentInfo> experimentInfos =
+                dExperimentInfoMapper.selectDExperimentInfoByExperimentIds(Arrays.asList(experimentIds));
+        if (experimentInfos.size() != experimentIds.length)
+        {
+            throw new ServiceException("试验信息不存在");
         }
 
-        List<Path> dirPaths = new ArrayList<>();
-        for (DExperimentInfo expInfo : experimentInfos) {
-            Long projectId = expInfo.getProjectId();
-            if (projectId == null) {
-                throw new ServiceException("试验所属项目不存在，试验ID：" + expInfo.getExperimentId());
-            }
-            String parentPath = dProjectInfoMapper.selectDProjectInfoByProjectId(projectId).getPath();
-            String dirPathStr = profile + parentPath + expInfo.getPath();
-            Path dirPath = Paths.get(dirPathStr);
-            dirPaths.add(dirPath);
+        List<String> deleteExperimentIds = new ArrayList<>();
+        StringBuilder errorMsg = new StringBuilder();
 
-            try {
-                if (Files.exists(dirPath) && Files.list(dirPath).findAny().isPresent()) {
-                    throw new ServiceException("试验目录下有文件，不能删除，试验路径：" + expInfo.getPath());
+        for (DExperimentInfo experimentInfo : experimentInfos)
+        {
+            Long projectId = experimentInfo.getProjectId();
+            if (projectId == null)
+            {
+                errorMsg.append("项目不存在: ").append(experimentInfo.getExperimentId()).append("\n");
+                continue;
+            }
+
+            DProjectInfo projectInfo = requireProject(projectId);
+            Path projectRoot = buildProjectRootPath(projectInfo.getPath());
+            Path experimentPath = buildExperimentRootPath(projectInfo.getPath(), experimentInfo.getPath());
+
+            try (PathLockManager.LockHandle ignored = pathLockManager.lock(
+                    buildPaths(projectRoot),
+                    buildPaths(experimentPath)))
+            {
+                try
+                {
+                    if (isDirectoryNotEmpty(experimentPath))
+                    {
+                        errorMsg.append("试验目录不为空: ")
+                                .append(experimentPath)
+                                .append("\n");
+                        continue;
+                    }
                 }
-            } catch (IOException e) {
-                throw new ServiceException("检查试验目录失败：" + e.getMessage());
+                catch (IOException e)
+                {
+                    errorMsg.append("检查试验目录失败: ")
+                            .append(e.getMessage())
+                            .append("\n");
+                    continue;
+                }
+
+                try
+                {
+                    Files.deleteIfExists(experimentPath);
+                }
+                catch (IOException e)
+                {
+                    errorMsg.append("删除试验目录失败: ")
+                            .append(e.getMessage())
+                            .append("\n");
+                    continue;
+                }
+
+                dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentInfo.getExperimentId());
+                deleteExperimentIds.add(experimentInfo.getExperimentId());
+                redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentInfo.getExperimentId());
             }
         }
 
-        for (Path dirPath : dirPaths) {
-            try {
-                Files.deleteIfExists(dirPath);
-            } catch (IOException e) {
-                throw new ServiceException("删除试验目录失败：" + e.getMessage());
-            }
+        if (errorMsg.length() > 0 && deleteExperimentIds.size() != experimentIds.length)
+        {
+            throw new ServiceException(errorMsg.toString());
+        }
+        return 1;
+    }
+
+    @Override
+    public int deleteDExperimentInfoByExperimentId(String experimentId)
+    {
+        DExperimentInfo experimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
+        if (experimentInfo == null)
+        {
+            throw new ServiceException("试验信息不存在");
         }
 
-        return dExperimentInfoMapper.deleteDExperimentInfoByExperimentIds(experimentIds);
+        DProjectInfo projectInfo = requireProject(experimentInfo.getProjectId());
+        Path projectRoot = buildProjectRootPath(projectInfo.getPath());
+        Path experimentPath = buildExperimentRootPath(projectInfo.getPath(), experimentInfo.getPath());
+
+        try (PathLockManager.LockHandle ignored = pathLockManager.lock(
+                buildPaths(projectRoot),
+                buildPaths(experimentPath)))
+        {
+            try
+            {
+                if (isDirectoryNotEmpty(experimentPath))
+                {
+                    throw new ServiceException("试验目录不为空");
+                }
+            }
+            catch (IOException e)
+            {
+                throw new ServiceException("检查试验目录失败: " + e.getMessage());
+            }
+
+            try
+            {
+                Files.deleteIfExists(experimentPath);
+            }
+            catch (IOException e)
+            {
+                throw new ServiceException("删除试验目录失败: " + e.getMessage());
+            }
+
+            redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+            return dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentId);
+        }
     }
 
-    /**
-     * 删除试验信息主信息
-     *
-     * @param experimentId 试验信息主主键
-     * @return 结果
-     */
     @Override
-    public int deleteDExperimentInfoByExperimentId(String experimentId) {
-        return dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentId);
-    }
-
-    /**
-     * 查询试验信息主树结构
-     *
-     * @return 试验信息主树结构
-     */
-    @Override
-    public List<TreeTableVo> getExperimentInfoTree() {
+    public List<TreeTableVo> getExperimentInfoTree()
+    {
         return selectDExperimentInfoTree(new TreeTableVo());
+    }
+
+    private DProjectInfo requireProject(Long projectId)
+    {
+        DProjectInfo projectInfo = dProjectInfoMapper.selectDProjectInfoByProjectId(projectId);
+        if (projectInfo == null)
+        {
+            throw new ServiceException("项目不存在");
+        }
+        return projectInfo;
+    }
+
+    private Path buildProjectRootPath(String projectPath)
+    {
+        return Paths.get(profile, StringUtils.removeStart(projectPath, "/")).normalize();
+    }
+
+    private Path buildExperimentRootPath(String projectPath, String experimentPath)
+    {
+        return Paths.get(
+                profile,
+                StringUtils.removeStart(projectPath, "/"),
+                StringUtils.removeStart(experimentPath, "/")
+        ).normalize();
+    }
+
+    private List<Path> buildPaths(Path... paths)
+    {
+        List<Path> result = new ArrayList<>();
+        if (paths == null)
+        {
+            return result;
+        }
+        for (Path path : paths)
+        {
+            if (path != null)
+            {
+                result.add(path);
+            }
+        }
+        return result;
+    }
+
+    private boolean isDirectoryNotEmpty(Path directory) throws IOException
+    {
+        if (Files.notExists(directory))
+        {
+            return false;
+        }
+        try (Stream<Path> stream = Files.list(directory))
+        {
+            return stream.findAny().isPresent();
+        }
     }
 }

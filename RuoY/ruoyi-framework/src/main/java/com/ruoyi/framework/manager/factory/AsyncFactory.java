@@ -139,7 +139,7 @@ public class AsyncFactory
                     HttpUtils.sendPost(targetUrl, jsonLog);
                 } catch (Exception e) {
                     // 注意：推送失败不能影响本地业务，只打印错误即可
-                    throw new ServiceException();
+                    sys_user_logger.error("推送操作日志到甲方系统失败：" + e.getMessage(), e);
                 }
             }
         };

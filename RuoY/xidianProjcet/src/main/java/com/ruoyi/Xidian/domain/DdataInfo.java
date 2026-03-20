@@ -38,138 +38,183 @@ public class DdataInfo extends BaseEntity {
     public void setId(Integer id) {
         this.id = id;
     }
+
     public Integer getId() {
         return id;
     }
+
     public void setTargetId(String targetId) {
         this.targetId = targetId;
     }
+
     public String getTargetId() {
         return targetId;
     }
+
     public void setTargetType(String targetType) {
         this.targetType = targetType;
     }
+
     public String getTargetType() {
         return targetType;
     }
+
     public void setTargetCategory(String targetCategory) {
         this.targetCategory = targetCategory;
     }
+
     public String getTargetCategory() {
         return targetCategory;
     }
+
     public void setExperimentId(String experimentId) {
         this.experimentId = experimentId;
     }
+
     public String getExperimentId() {
         return experimentId;
     }
+
     public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
+
     public Date getStartTime() {
         return startTime;
     }
+
     public void setLocation(String location) {
         this.location = location;
     }
+
     public String getLocation() {
         return location;
     }
+
     public void setContentDesc(String contentDesc) {
         this.contentDesc = contentDesc;
     }
+
     public String getContentDesc() {
         return contentDesc;
     }
+
     public void setDataName(String dataName) {
         this.dataName = dataName;
     }
+
     public String getDataName() {
         return dataName;
     }
+
     public void setDataType(String dataType) {
         this.dataType = dataType;
     }
+
     public String getDataType() {
         return dataType;
     }
+
     public void setDataFilePath(String dataFilePath) {
         this.dataFilePath = dataFilePath;
     }
+
     public String getDataFilePath() {
         return dataFilePath;
     }
+
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
     }
+
     public String getDeviceId() {
         return deviceId;
     }
+
     public void setDeviceInfo(String deviceInfo) {
         this.deviceInfo = deviceInfo;
     }
+
     public String getDeviceInfo() {
         return deviceInfo;
     }
+
     public void setSampleFrequency(Integer sampleFrequency) {
         this.sampleFrequency = sampleFrequency;
     }
+
     public Integer getSampleFrequency() {
         return sampleFrequency;
     }
+
     public void setWorkStatus(String workStatus) {
         this.workStatus = workStatus;
     }
+
     public String getWorkStatus() {
         return workStatus;
     }
+
     public void setExtAttr(String extAttr) {
         this.extAttr = extAttr;
     }
+
     public String getExtAttr() {
         return extAttr;
     }
+
     public void setExperimentName(String experimentName) {
         this.experimentName = experimentName;
     }
+
     public String getExperimentName() {
         return experimentName;
     }
+
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
+
     public Long getProjectId() {
         return projectId;
     }
+
     public void setProjectName(String projectName) {
         this.projectName = projectName;
     }
+
     public String getProjectName() {
         return projectName;
     }
+
     public void setPageNum(Integer pageNum) {
         this.pageNum = pageNum;
     }
+
     public Integer getPageNum() {
         return pageNum;
     }
+
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
+
     public Integer getPageSize() {
         return pageSize;
     }
+
     public void setIsSimulation(Boolean isSimulation) {
-        this.isSimulation=isSimulation;
+        this.isSimulation = isSimulation;
     }
+
     public Boolean getIsSimulation() {
         return isSimulation;
     }
+
     public void setFileName(String fileName) {
         this.FileName = fileName;
     }
+
     public String getFileName() {
         return FileName;
     }

@@ -1,6 +1,5 @@
 import request from '@/utils/request'
 
-// 查询试验信息主列表
 export function listInfo(query) {
   return request({
     url: '/data/info/list',
@@ -9,35 +8,40 @@ export function listInfo(query) {
   })
 }
 
-// 查询试验信息主详细
 export function getInfo(id, type) {
   return request({
-    url: '/data/info/' + id,
+    url: id ? '/data/info/' + id : '/data/info/',
     method: 'get',
-    params: {type}
+    params: { type }
   })
 }
 
-// 新增试验信息主
 export function addInfo(data) {
   return request({
     url: '/data/info',
     method: 'post',
-    data: data
+    data
   })
 }
 
-// 修改试验信息主
-export function updateInfo(data) {
+export function updateInfo(id, type, data) {
   return request({
-    url: '/data/info',
+    url: '/data/info/' + id,
     method: 'put',
-    data: data
+    params: { type },
+    data
   })
 }
 
-// 删除试验信息
-export function delInfo(experimentIds, projectIds) {
+export function delInfo(id, type) {
+  return request({
+    url: '/data/info/' + id,
+    method: 'delete',
+    params: { type }
+  })
+}
+
+export function delInfoBatch(experimentIds, projectIds) {
   return request({
     url: '/data/info/' + experimentIds + '/project/' + projectIds,
     method: 'delete'
@@ -58,10 +62,10 @@ export function getTargetInfos() {
   })
 }
 
-export function getExperimentInfos(ExperimentInfoQuery) {
+export function getExperimentInfos(experimentInfoQuery) {
   return request({
     url: '/data/info/experimentInfos',
     method: 'get',
-    params: ExperimentInfoQuery
+    params: experimentInfoQuery
   })
 }

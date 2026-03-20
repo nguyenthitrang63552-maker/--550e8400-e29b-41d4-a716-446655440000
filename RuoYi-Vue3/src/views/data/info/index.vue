@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <div class="search-panel">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
@@ -345,7 +345,7 @@
 </template>
 
 <script setup name="Info">
-import { listInfo, getInfo, delInfo, addInfo, updateInfo} from "@/api/data/info"
+import { listInfo, getInfo, delInfo, delInfoBatch, addInfo, updateInfo } from "@/api/data/info"
 import { addDateRange } from "@/utils/ruoyi"
 
 const { proxy } = getCurrentInstance()
@@ -406,10 +406,24 @@ const { queryParams, form, rules } = toRefs(data)
 /** 查询试验信息树形表 */
 function getList() {
   loading.value = true
-  listInfo(addDateRange(queryParams.value, dateRange.value)).then(response => {
-    infoList.value = response.data
-    loading.value = false
-  })
+  return listInfo(addDateRange(queryParams.value, dateRange.value))
+    .then(response => {
+      infoList.value = response.data || []
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+async function refreshListAfterAjaxError(error) {
+  if (isActionCancelled(error)) {
+    return
+  }
+  await getList()
+}
+
+function isActionCancelled(error) {
+  return error === 'cancel' || error === 'close'
 }
 	
 // 取消按钮
@@ -608,14 +622,16 @@ function submitForm() {
       }
 
       if (submitData.id != null && title.value.startsWith("修改")) {
-        await updateInfo(submitData)
+        await updateInfo(submitData.id, submitData.type, submitData)
         proxy.$modal.msgSuccess("修改成功")
       } else {
         await addInfo(submitData)
         proxy.$modal.msgSuccess("新增成功")
       }
       open.value = false
-      getList()
+      await getList()
+    } catch (error) {
+      await refreshListAfterAjaxError(error)
     } finally {
       submitLoading.value = false
     }
@@ -646,43 +662,37 @@ function toggleChildrenSelection(children, isSelected) {
 }
 
 /** 删除按钮操作 */
-function handleDelete(row) {
-  const projectIds = []
-  const experimentIds = []
-  
-  if (row) {
-    // 单个删除
-    if (row.type === 'project') {
-      projectIds.push(row.id)
-      // 如果是项目，自动包含其下所有试验数据
-      if (row.children && row.children.length > 0) {
-        const collectExperimentIds = (nodes) => {
-          nodes.forEach(node => {
-            if (node.type === 'experiment') experimentIds.push(node.id)
-            if (node.children) collectExperimentIds(node.children)
-          })
-        }
-        collectExperimentIds(row.children)
-      }
-    } else {
-      experimentIds.push(row.id)
+async function handleDelete(row) {
+  try {
+    if (row) {
+      await proxy.$modal.confirm('是否确认删除选中的数据项？')
+      await delInfo(row.id, row.type)
+      proxy.$modal.msgSuccess("删除成功")
+      await getList()
+      return
     }
-  } else {
-    // 批量删除
+
+    const projectIds = []
+    const experimentIds = []
     selectedRows.value.forEach(item => {
-      if (item.type === 'project') projectIds.push(item.id)
-      else if (item.type === 'experiment') experimentIds.push(item.id)
+      if (item.type === 'project') {
+        projectIds.push(item.id)
+      } else if (item.type === 'experiment') {
+        experimentIds.push(item.id)
+      }
     })
-  }
 
-  if (projectIds.length === 0 && experimentIds.length === 0) return
+    if (projectIds.length === 0 && experimentIds.length === 0) {
+      return
+    }
 
-  proxy.$modal.confirm('是否确认删除选中的数据项？').then(function() {
-    return delInfo(experimentIds.join(',') || 0, projectIds.join(',') || 0)
-  }).then(() => {
-    getList()
+    await proxy.$modal.confirm('是否确认删除选中的数据项？')
+    await delInfoBatch(experimentIds.join(',') || 0, projectIds.join(',') || 0)
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+    await getList()
+  } catch (error) {
+    await refreshListAfterAjaxError(error)
+  }
 }
 
 /** 格式化日期用于提交 - 转换为 yyyy-MM-dd 格式 */

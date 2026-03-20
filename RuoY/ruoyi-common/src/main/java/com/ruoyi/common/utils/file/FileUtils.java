@@ -390,7 +390,7 @@ public class FileUtils
         }
         catch (Exception e)
         {
-            throw new ServiceException("Preview failed: " + e.getMessage());
+            throw new ServiceException("预览失败: " + e.getMessage());
         }
     }
 
@@ -413,15 +413,34 @@ public class FileUtils
             return previewCsvByPage(file, safePageNum, safePageSize, startIndex, endIndex);
         }
 
+        if (lowerName.endsWith(".txt"))
+        {
+            return previewTxtByPage(file, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
         try (FileInputStream fis = new FileInputStream(file); Workbook workbook = WorkbookFactory.create(fis))
         {
             Sheet sheet = workbook.getSheetAt(0);
+            List<String> header = new ArrayList<>();
+            Row headerRow = sheet.getRow(0);
+            if (headerRow != null)
+            {
+                for (int colIdx = 0; colIdx < headerRow.getLastCellNum(); colIdx++)
+                {
+                    Cell cell = headerRow.getCell(colIdx);
+                    header.add(getCellValue(cell));
+                }
+            }
+            else
+            {
+                throw new ServiceException("Excel文件第一行不能为空");
+            }
             List<Map<String, Object>> pageRows = new ArrayList<>();
             int totalRows = 0;
 
             for (int rowIdx = 0; rowIdx <= sheet.getLastRowNum(); rowIdx++)
             {
-                Row row = sheet.getRow(rowIdx);
+                Row row = sheet.getRow(rowIdx + 1);
                 if (row == null)
                 {
                     continue;
@@ -433,7 +452,7 @@ public class FileUtils
                     for (int colIdx = 0; colIdx < row.getLastCellNum(); colIdx++)
                     {
                         Cell cell = row.getCell(colIdx);
-                        rowData.put("col_" + colIdx, getCellValue(cell));
+                        rowData.put(header.get(colIdx), getCellValue(cell));
                     }
                     pageRows.add(rowData);
                 }
@@ -443,7 +462,7 @@ public class FileUtils
         }
         catch (Exception e)
         {
-            throw new ServiceException("Preview failed: " + e.getMessage());
+            throw new ServiceException("预览失败: " + e.getMessage());
         }
     }
 
@@ -503,8 +522,38 @@ public class FileUtils
         }
         catch (Exception e)
         {
-            throw new ServiceException("Preview failed: " + e.getMessage());
+            throw new ServiceException("预览失败: " + e.getMessage());
         }
+    }
+    private static Map<String,Object> previewTxtByPage(File file , int pageNum, int pageSize, int startIndex, int endIndex){
+        List<String> lines = new ArrayList<>();
+        int totalRows = 0;
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (totalRows >= startIndex && totalRows < endIndex){
+                    lines.add(line);
+                }
+                totalRows++;
+            }
+            return buildPreviewTxtPageResult(lines, totalRows, pageNum, pageSize);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("预览失败: " + e.getMessage());
+        }
+    }
+
+    private static Map<String,Object> buildPreviewTxtPageResult(List<String> lines, int total, int pageNum, int pageSize){
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("rows", lines);
+        result.put("total", total);
+        result.put("pageNum", pageNum);
+        result.put("pageSize", pageSize);
+        return result;
     }
 
     private static Map<String, Object> buildPreviewPageResult(List<Map<String, Object>> rows, int total, int pageNum, int pageSize)

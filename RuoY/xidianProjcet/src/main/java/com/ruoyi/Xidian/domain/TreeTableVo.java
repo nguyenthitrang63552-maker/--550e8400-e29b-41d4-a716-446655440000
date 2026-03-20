@@ -20,76 +20,75 @@ public class TreeTableVo extends TreeEntity {
     private String Type;
 
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
-    public String getName()
-    {
+
+    public String getName() {
         return name;
     }
-    public Date getStartTime()
-    {
+
+    public Date getStartTime() {
         return startTime;
     }
-    public String getLocation()
-    {
+
+    public String getLocation() {
         return Location;
     }
-    public String getContentDesc()
-    {
+
+    public String getContentDesc() {
         return contentDesc;
     }
-    public String getPath()
-    {
+
+    public String getPath() {
         return path;
     }
-    public void setId(String id)
-    {
+
+    public void setId(String id) {
         this.id = id;
     }
-    public void setName(String name)
-    {
+
+    public void setName(String name) {
         this.name = name;
     }
-    public void setStartTime(Date startTime)
-    {
+
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
-    public void setLocation(String Location)
-    {
+
+    public void setLocation(String Location) {
         this.Location = Location;
     }
-    public void setContentDesc(String contentDesc)
-    {
+
+    public void setContentDesc(String contentDesc) {
         this.contentDesc = contentDesc;
     }
-    public void setPath(String path)
-    {
+
+    public void setPath(String path) {
         this.path = path;
     }
-    public String getType()
-    {
+
+    public String getType() {
         return Type;
     }
-    public void setType(String Type)
-    {
+
+    public void setType(String Type) {
         this.Type = Type;
     }
-    public String getTargetType()
-    {
+
+    public String getTargetType() {
         return targetType;
     }
-    public void setTargetType(String targetType)
-    {
+
+    public void setTargetType(String targetType) {
         this.targetType = targetType;
     }
-    public String getTargetId()
-    {
+
+    public String getTargetId() {
         return targetId;
     }
-    public void setTargetId(String targetId)
-    {
+
+    public void setTargetId(String targetId) {
         this.targetId = targetId;
     }
 }

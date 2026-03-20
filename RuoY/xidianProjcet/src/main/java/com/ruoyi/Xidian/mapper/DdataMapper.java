@@ -2,6 +2,7 @@ package com.ruoyi.Xidian.mapper;
 
 import com.ruoyi.Xidian.domain.DdataInfo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -19,4 +20,6 @@ public interface DdataMapper {
     Integer updateDdataInfo(DdataInfo ddataInfo);
 
     Integer deleteDdataInfos(List<Integer> ids);
+    // 查询同一文件下相同文件名的文件
+    DdataInfo selectSameNameFile(@Param("experimentId") String experimentId, @Param("dataFilePath") String dataFilePath);
 }
