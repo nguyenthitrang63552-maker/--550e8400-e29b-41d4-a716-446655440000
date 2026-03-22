@@ -546,6 +546,23 @@ public class FileUtils
             throw new ServiceException("预览失败: " + e.getMessage());
         }
     }
+    public static Map<String,Object> previewTxt(File file){
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                lines.add(line);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("预览失败: " + e.getMessage());
+        }
+        return buildPreviewTxtPageResult(lines, lines.size(), 1, 100);
+    }
 
     private static Map<String,Object> buildPreviewTxtPageResult(List<String> lines, int total, int pageNum, int pageSize){
         Map<String, Object> result = new LinkedHashMap<>();
