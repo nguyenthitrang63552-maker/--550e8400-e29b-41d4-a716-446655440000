@@ -97,8 +97,8 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" :show-overflow-tooltip="true" />
       <el-table-column label="试验名称" align="center" prop="name" :show-overflow-tooltip="true" />
+      <el-table-column label="编号" align="center" prop="id" :show-overflow-tooltip="true" />
       <el-table-column label="目标" align="center" prop="targetType" :show-overflow-tooltip="true" />
       <el-table-column label="日期" align="center" prop="startTime" width="180">
         <template #default="scope">
@@ -452,7 +452,7 @@ function reset() {
 
 /** 样式控制 */
 function cellStyle({ row, column, rowIndex, columnIndex }) {
-  if (column.property === 'id') {
+  if (column.property === 'name') {
     return { textAlign: row.type === 'project' ? 'left' : 'center' };
   }
 }

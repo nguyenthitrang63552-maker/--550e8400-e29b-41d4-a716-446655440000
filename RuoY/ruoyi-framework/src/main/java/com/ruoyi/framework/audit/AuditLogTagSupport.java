@@ -34,6 +34,7 @@ public final class AuditLogTagSupport
     public static final String TAG_NIGHT_LOGIN = "\u591c\u95f4\u767b\u5f55";
     public static final String TAG_FREQUENT_FAILURE = "\u9891\u7e41\u5931\u8d25";
     public static final String TAG_ABNORMAL_IP = "\u5f02\u5e38IP";
+    public static final String TAG_CONCURRENT_LOGIN = "\u5e76\u53d1\u767b\u5f55";
 
     private static final String KEYWORD_LOGIN = "\u767b\u5f55";
     private static final String KEYWORD_LOGOUT = "\u6ce8\u9500";
@@ -129,6 +130,24 @@ public final class AuditLogTagSupport
         {
             promote(operLog, EVENT_TYPE_ABNORMAL, 2, TAG_ABNORMAL_IP);
         }
+    }
+
+    public static void tagConcurrentLogin(SysOperLog operLog)
+    {
+        if (operLog == null)
+        {
+            return;
+        }
+        promote(operLog, EVENT_TYPE_VIOLATION, 4, TAG_CONCURRENT_LOGIN);
+    }
+
+    public static void tagConcurrentLogin(SysLogininfor logininfor)
+    {
+        if (logininfor == null)
+        {
+            return;
+        }
+        promote(logininfor, EVENT_TYPE_VIOLATION, 4, TAG_CONCURRENT_LOGIN);
     }
 
     public static void tagOperLog(SysOperLog operLog, LoginUser loginUser)

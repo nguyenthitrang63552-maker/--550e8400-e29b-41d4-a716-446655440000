@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.annotation.Log;
-import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.model.LoginUser;
@@ -22,6 +21,8 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.SysUserOnline;
 import com.ruoyi.system.service.ISysUserOnlineService;
+
+import static com.ruoyi.common.constant.CacheConstants.LOGIN_TOKEN_KEY;
 
 /**
  * 在线用户监控
@@ -42,7 +43,7 @@ public class SysUserOnlineController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(String ipaddr, String userName)
     {
-        Collection<String> keys = redisCache.keys(CacheConstants.LOGIN_TOKEN_KEY + "*");
+        Collection<String> keys = redisCache.keys(LOGIN_TOKEN_KEY + "*");
         List<SysUserOnline> userOnlineList = new ArrayList<SysUserOnline>();
         for (String key : keys)
         {
@@ -77,7 +78,7 @@ public class SysUserOnlineController extends BaseController
     @DeleteMapping("/{tokenId}")
     public AjaxResult forceLogout(@PathVariable String tokenId)
     {
-        redisCache.deleteObject(CacheConstants.LOGIN_TOKEN_KEY + tokenId);
+        redisCache.deleteObject(LOGIN_TOKEN_KEY + tokenId);
         return success();
     }
 }

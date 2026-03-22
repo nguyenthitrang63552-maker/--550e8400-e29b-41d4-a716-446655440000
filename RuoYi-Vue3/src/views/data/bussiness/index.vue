@@ -147,17 +147,19 @@
                             </template>
                         </el-table-column>
                         <el-table-column label="数据种类" align="center" prop="dataType" :show-overflow-tooltip="true" />
-                        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+                        <el-table-column label="操作" align="center" class-name="small-padding fixed-width table-action-cell" width="132">
                             <template #default="scope">
-                            <el-tooltip content="详情" placement="top">
-                                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dataInfo:info:query']"></el-button>
-                            </el-tooltip>
-                            <el-tooltip content="修改" placement="top">
-                                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dataInfo:info:update']"></el-button>
-                            </el-tooltip>
-                            <el-tooltip content="删除" placement="top">
-                                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dataInfo:info:delete']"></el-button>
-                            </el-tooltip>
+                                <div class="table-action-group">
+                                    <el-tooltip content="详情" placement="top">
+                                        <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dataInfo:info:query']"></el-button>
+                                    </el-tooltip>
+                                    <el-tooltip content="修改" placement="top">
+                                        <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dataInfo:info:update']"></el-button>
+                                    </el-tooltip>
+                                    <el-tooltip content="删除" placement="top">
+                                        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dataInfo:info:delete']"></el-button>
+                                    </el-tooltip>
+                                </div>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -1395,6 +1397,30 @@ onMounted(()=>{
 .toolbar-action-btn--delete:hover,
 .toolbar-action-btn--delete:focus {
   background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.table-action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+.table-action-group :deep(.el-button) {
+  margin: 0;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  border-radius: 6px;
+}
+
+.table-action-cell :deep(.cell) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .detail-text-preview {
