@@ -98,11 +98,7 @@
                         </el-table-column>
                         <el-table-column label="状态" align="center" prop="status" >
                             <template #default="scope">
-                                <span v-if="scope.row.status === 1">已完成</span>
-                                <span v-else-if="scope.row.status === 2">生成中</span>
-                                <span v-else-if="scope.row.status === 3">部分失败</span>
-                                <span v-else-if="scope.row.status === 4">部分成功</span>
-                                <span v-else>失败</span>
+                                <span>{{ getTaskStatusText(scope.row.status) }}</span>
                             </template>
                         </el-table-column>
                         <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -327,44 +323,101 @@
           </div>
         </el-dialog>
 
-        <!-- 详情对话框 -->
-        <el-dialog title="任务详情" v-model="openView" width="700px" append-to-body>
-            <el-form :model="form" label-width="100px">
-                <el-row>
-                    <el-col :span="12">
-                        <el-form-item label="ID">{{ form.id }}</el-form-item>
-                        <el-form-item label="任务名称">{{ form.taskName }}</el-form-item>
-                        <el-form-item label="是否模拟">
-                            <span v-if="form.isSimulation === true">真实数据</span>
-                            <span v-else-if="form.isSimulation === false">模拟数据</span>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="所属试验">{{ form.experimentName }}</el-form-item>
-                        <el-form-item label="所属项目">{{ form.projectName }}</el-form-item>
-                        <el-form-item label="试验目标">{{ form.targetType }}</el-form-item>
-                    </el-col>
-                    <el-col :span="24">
-                        <el-form-item label="路径">{{ form.dataFilePath }}</el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="试验时间">{{ parseTime(form.startTime) }}</el-form-item>
-                        <el-form-item label="试验地点">{{ form.location }}</el-form-item>
-                    </el-col>
-                    <el-col :span="24">
-                        <el-form-item label="内容描述">{{ form.contentDesc }}</el-form-item>
-                        <el-form-item label="创建人">{{ form.createBy }}</el-form-item>
-                        <el-form-item label="创建时间">{{ parseTime(form.createTime) }}</el-form-item>
-                    </el-col>
-                </el-row>
-            </el-form>
+      <el-dialog
+        title="任务详情"
+        v-model="detailDialogOpen"
+        width="1180px"
+        top="6vh"
+        append-to-body
+        class="task-detail-dialog"
+      >
+        <div class="task-detail">
+          <div class="task-detail__summary">
+            <div class="task-detail__grid">
+              <div class="task-detail__item">
+                <span class="task-detail__label">任务名称：</span>
+                <span class="task-detail__value">{{ detailDialogData.taskName || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">任务状态：</span>
+                <span class="task-detail__value">{{ detailDialogData.statusText || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">所属项目：</span>
+                <span class="task-detail__value">{{ detailDialogData.projectName || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">所属试验：</span>
+                <span class="task-detail__value">{{ detailDialogData.experimentName || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">数据类型：</span>
+                <span class="task-detail__value">{{ detailDialogData.dataType || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">试验目标：</span>
+                <span class="task-detail__value">{{ detailDialogData.targetType || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">创建人：</span>
+                <span class="task-detail__value">{{ detailDialogData.createBy || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">创建时间：</span>
+                <span class="task-detail__value">{{ detailDialogData.createTimeText || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">试验时间：</span>
+                <span class="task-detail__value">{{ detailDialogData.startTimeText || '--' }}</span>
+              </div>
+              <div class="task-detail__item">
+                <span class="task-detail__label">试验地点：</span>
+                <span class="task-detail__value">{{ detailDialogData.location || '--' }}</span>
+              </div>
+              <div class="task-detail__item task-detail__item--wide">
+                <span class="task-detail__label">数据路径：</span>
+                <span class="task-detail__value">{{ detailDialogData.dataFilePath || '--' }}</span>
+              </div>
+              <div class="task-detail__item task-detail__item--wide">
+                <span class="task-detail__label">任务说明：</span>
+                <span class="task-detail__value">{{ detailDialogData.contentDesc || '--' }}</span>
+              </div>
+            </div>
+          </div>
 
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button @click="openView = false">关 闭</el-button>
-                </div>
-            </template>
-        </el-dialog>
+          <div class="task-detail__section">
+            <div class="task-detail__section-title">具体数据明细</div>
+            <el-table
+              :data="detailDialogData.detailRows"
+              border
+              class="task-detail__table"
+              empty-text="暂无明细数据"
+            >
+              <el-table-column label="编号（顺序 1-N）" prop="order" width="118" align="center" />
+              <el-table-column label="数据名称" prop="dataName" min-width="190" show-overflow-tooltip />
+              <el-table-column label="数据类型" prop="dataType" min-width="170" show-overflow-tooltip />
+              <el-table-column label="状态" prop="statusText" width="120" align="center" />
+              <el-table-column label="输出类型" prop="outputType" width="120" align="center" />
+              <el-table-column label="参数配置" prop="parameterConfig" min-width="260">
+                <template #default="scope">
+                  <div class="task-detail__multiline">{{ scope.row.parameterConfig }}</div>
+                </template>
+              </el-table-column>
+              <el-table-column label="返回结果" prop="result" min-width="180" align="center">
+                <template #default="scope">
+                  <div class="task-detail__result">{{ scope.row.result }}</div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="detailDialogOpen = false">关闭</el-button>
+          </div>
+        </template>
+      </el-dialog>
       <el-dialog :title="title" v-model="open" width="560px">
           <el-form ref="infoRef" :model="form" :rules="rules" label-width="84px" class="ant-form-layout">
           <el-form-item label="名称" prop="name">
@@ -457,7 +510,8 @@ const loading = ref(false)
 const total = ref(0)
 const taskList = ref([])
 const multiple = ref(true)
-const openView = ref(false)
+const detailDialogOpen = ref(false)
+const detailDialogData = ref(createEmptyTaskDetail())
 const selectedTaskRows = ref([])
 const simulationDialogOpen = ref(false)
 const mockTaskSource = ref([])
@@ -499,6 +553,138 @@ const mockDataTypes = ['载机惯导数据', '雷达航迹数据', 'AIS', 'ADS-B
 const mockLocations = ['西安', '青岛', '三亚', '舟山', '连云港', '湛江']
 const mockCreators = ['admin', 'analyst', 'zhangsan', 'lisi', 'wangwu']
 const mockStatusOptions = [1, 2, 3, 4, 5]
+
+function createEmptyTaskDetail() {
+  return {
+    id: '',
+    taskName: '',
+    status: null,
+    statusText: '',
+    projectName: '',
+    experimentName: '',
+    dataType: '',
+    targetType: '',
+    createBy: '',
+    createTimeText: '',
+    startTimeText: '',
+    location: '',
+    dataFilePath: '',
+    contentDesc: '',
+    detailRows: []
+  }
+}
+
+function getTaskStatusText(status) {
+  switch (status) {
+    case 1:
+      return '已完成'
+    case 2:
+      return '生成中'
+    case 3:
+      return '部分失败'
+    case 4:
+      return '部分成功'
+    default:
+      return '失败'
+  }
+}
+
+function formatDetailDateTime(value) {
+  if (!value) {
+    return '--'
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`
+}
+
+function buildDetailStatusPlan(status, count) {
+  const templates = {
+    1: [
+      { statusText: '已完成', result: 'success' }
+    ],
+    2: [
+      { statusText: '执行中', result: '/' },
+      { statusText: '等待中', result: '/' }
+    ],
+    3: [
+      { statusText: '已完成', result: 'success' },
+      { statusText: '失败', result: '参数校验未通过' },
+      { statusText: '失败', result: '返回失败结果及原因，如内存不足' }
+    ],
+    4: [
+      { statusText: '已完成', result: 'success' },
+      { statusText: '已完成', result: 'success' },
+      { statusText: '失败', result: '部分数据源缺失' }
+    ],
+    default: [
+      { statusText: '失败', result: '返回失败结果及原因，如内存不足' }
+    ]
+  }
+
+  const template = templates[status] || templates.default
+  return Array.from({ length: count }, (_, index) => template[index] || template[template.length - 1])
+}
+
+function buildDetailDataTypes(primaryType) {
+  return [primaryType, ...mockDataTypes]
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index)
+    .slice(0, 4)
+}
+
+function buildParameterConfig(row, dataType, index) {
+  const baseTime = row.createTime ? new Date(row.createTime) : new Date()
+  const endTime = new Date(baseTime.getTime() + (index + 1) * 61 * 1000)
+  const frequency = ['100Hz', '50Hz', '200Hz', '400Hz'][index % 4]
+  const power = ['100', '95', '90', '85'][index % 4]
+  const bandwidth = ['3000000', '1500000', '5000000', '1000000'][index % 4]
+
+  return [
+    `时长范围：${formatDetailDateTime(baseTime)} - ${formatDetailDateTime(endTime)}`,
+    `数据类型：${dataType || row.dataType || '--'}`,
+    `数据频率：${frequency}`,
+    `信号功率：${power}%`,
+    `信号带宽：${bandwidth} Hz`,
+    `试验地点：${row.location || '--'}`
+  ].join('\n')
+}
+
+function buildTaskDetailRows(row) {
+  const dataTypes = buildDetailDataTypes(row.dataType)
+  const statusPlan = buildDetailStatusPlan(row.status, dataTypes.length)
+
+  return dataTypes.map((dataType, index) => ({
+    order: index + 1,
+    dataName: `${row.taskName || '任务'}-${dataType}`,
+    dataType,
+    statusText: statusPlan[index].statusText,
+    outputType: index % 2 === 0 ? 'bit' : 'csv',
+    parameterConfig: buildParameterConfig(row, dataType, index),
+    result: statusPlan[index].result
+  }))
+}
+
+function buildTaskDetailData(row) {
+  return {
+    ...createEmptyTaskDetail(),
+    ...row,
+    statusText: getTaskStatusText(row.status),
+    createTimeText: formatDetailDateTime(row.createTime),
+    startTimeText: formatDetailDateTime(row.startTime),
+    detailRows: buildTaskDetailRows(row)
+  }
+}
 
 function createSimulationDataItem(index) {
   return {
@@ -906,11 +1092,8 @@ function handleDelete(row) {
 }
 
 function handleView(row) {
-  form.value = {
-    ...form.value,
-    ...row
-  }
-  openView.value = true
+  detailDialogData.value = buildTaskDetailData(row)
+  detailDialogOpen.value = true
 }
 
 function handleSimulationProjectChange() {
@@ -1199,6 +1382,69 @@ onMounted(()=>{
   background: linear-gradient(90deg, #6b6df7 0%, #7c82ff 100%);
 }
 
+.task-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.task-detail__summary {
+  padding: 4px 2px 0;
+}
+
+.task-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 36px;
+}
+
+.task-detail__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.task-detail__item--wide {
+  grid-column: 1 / -1;
+}
+
+.task-detail__label {
+  flex-shrink: 0;
+  color: #606266;
+  line-height: 1.7;
+}
+
+.task-detail__value {
+  min-width: 0;
+  color: #303133;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.task-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.task-detail__section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.task-detail__table :deep(.el-table__cell) {
+  vertical-align: top;
+}
+
+.task-detail__multiline,
+.task-detail__result {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.7;
+}
+
 @media (max-width: 1440px) {
   .simulation-block {
     flex-direction: column;
@@ -1216,6 +1462,11 @@ onMounted(()=>{
 
   .simulation-item-row {
     grid-template-columns: 1fr;
+  }
+
+  .task-detail__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 </style>
