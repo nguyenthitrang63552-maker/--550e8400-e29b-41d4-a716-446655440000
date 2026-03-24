@@ -103,7 +103,7 @@
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width action-column">
           <template #default="scope">
-            <el-tooltip content="态势显示(播放视频)" placement="top">
+            <el-tooltip content="态势显示" placement="top">
               <el-button link class="action-link action-link-view" @click="handleView(scope.row)">查看</el-button>
             </el-tooltip>
           </template>
@@ -121,34 +121,77 @@
     </div>
 
     <el-dialog
-      title="态势显示 (视频预览)"
       v-model="dialogVisible"
-      width="800px"
+      :fullscreen="isDialogFullscreen"
+      :width="dialogWidth"
+      :top="dialogTop"
       append-to-body
+      destroy-on-close
+      :close-on-click-modal="false"
+      :show-close="false"
+      class="preview-dialog"
       @close="handleClose"
     >
-      <div class="video-container">
-        <video
-          ref="videoRef"
-          :src="videoUrl"
-          controls
-          autoplay
-          style="width: 100%; max-height: 550px; outline: none;"
-        >
-          您的浏览器不支持 HTML5 video 标签。
-        </video>
+      <template #header>
+        <div class="preview-dialog-header">
+          <div class="preview-dialog-title">态势显示</div>
+          <div class="preview-dialog-actions">
+            <el-button
+              link
+              class="preview-dialog-action"
+              :class="{ 'is-active': dialogMode === 'compact' }"
+              @click="setDialogMode('compact')"
+            >
+              最小化
+            </el-button>
+            <el-button
+              link
+              class="preview-dialog-action"
+              :class="{ 'is-active': dialogMode === 'large' }"
+              @click="setDialogMode('large')"
+            >
+              标准
+            </el-button>
+            <el-button
+              link
+              class="preview-dialog-action"
+              :class="{ 'is-active': dialogMode === 'fullscreen' }"
+              @click="toggleDialogFullscreen"
+            >
+              {{ isDialogFullscreen ? '还原' : '最大化' }}
+            </el-button>
+            <el-button
+              link
+              class="preview-dialog-action preview-dialog-action-close"
+              @click="dialogVisible = false"
+            >
+              关闭
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <div class="module-frame-wrapper" :style="frameWrapperStyle">
+        <iframe
+          v-if="dialogVisible && moduleUrl"
+          :src="moduleUrl"
+          class="module-frame"
+          frameborder="0"
+          allowfullscreen
+        />
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup name="simulation">
-import { ref, reactive, toRefs, getCurrentInstance, onMounted } from 'vue' // 确保你引入了 ref
+import { computed, getCurrentInstance, onMounted, reactive, ref, toRefs } from 'vue'
 import 'splitpanes/dist/splitpanes.css'
-import { addDateRange } from "@/utils/ruoyi"
-import { getExperimentInfos } from '@/api/data/info'
-import { getInfo } from '@/api/data/info'
+import { useRoute } from 'vue-router'
+import { addDateRange } from '@/utils/ruoyi'
+import { getExperimentInfos, getInfo } from '@/api/data/info'
 
+const route = useRoute()
 const dateRange = ref([])
 const { proxy } = getCurrentInstance()
 const projectOptions = ref([])
@@ -158,26 +201,52 @@ const showSearch = ref(true)
 const total = ref(0)
 const businessList = ref([])
 
-// [新增] 视频弹窗相关变量
 const dialogVisible = ref(false)
-const videoUrl = ref('')
-const videoRef = ref(null)
+const moduleUrl = ref('')
+const dialogMode = ref('large')
+
+const dialogWidth = computed(() => {
+  if (dialogMode.value === 'compact') {
+    return 'min(72vw, 1180px)'
+  }
+  return 'min(94vw, 1680px)'
+})
+
+const dialogTop = computed(() => {
+  if (dialogMode.value === 'compact') {
+    return '8vh'
+  }
+  return '3vh'
+})
+
+const isDialogFullscreen = computed(() => dialogMode.value === 'fullscreen')
+
+const frameWrapperStyle = computed(() => {
+  if (dialogMode.value === 'fullscreen') {
+    return { height: 'calc(100vh - 118px)' }
+  }
+  if (dialogMode.value === 'compact') {
+    return { height: 'min(62vh, 620px)' }
+  }
+  return { height: 'min(80vh, 860px)' }
+})
 
 const data = reactive({
   queryParams: {
-    id: null,
+    experimentId: null,
     pageNum: 1,
     pageSize: 10,
     experimentName: undefined,
     projectId: undefined,
     createBy: undefined,
-    createTime: undefined,
+    createTime: undefined
   }
 })
+
 const { queryParams } = toRefs(data)
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
+  proxy.resetForm('queryRef')
   dateRange.value = []
   handleQuery()
 }
@@ -193,35 +262,48 @@ function refresh() {
 }
 
 function handleQuery() {
+  queryParams.value.pageNum = 1
   getList()
 }
 
 function getList() {
   loading.value = true
-  getExperimentInfos(addDateRange(queryParams.value, dateRange.value)).then(response => {
-    businessList.value = response.rows || (response.data && response.data.rows) || [];
-    total.value = response.total || (response.data && response.data.total) || 0;
-    loading.value = false;
-  });
+  getExperimentInfos(addDateRange(queryParams.value, dateRange.value))
+    .then(response => {
+      businessList.value = response.rows || (response.data && response.data.rows) || []
+      total.value = response.total || (response.data && response.data.total) || 0
+    })
+    .finally(() => {
+      loading.value = false
+    })
 }
 
-// [新增] 点击查看按钮触发的方法
-function handleView(row) {
-  // TODO: 这里需要根据你后端的实际数据进行替换。
-  // 比如如果这行数据中包含视频地址，可能是 row.videoPath 或 row.url。
-  // 下面这行代码的意思是：如果有视频字段就用该字段，如果没有就默认播放一个测试视频。
-  videoUrl.value = row.videoUrl || 'https://www.w3schools.com/html/mov_bbb.mp4';
-
-  // 打开弹窗
-  dialogVisible.value = true;
-}
-
-// [新增] 弹窗关闭时的回调，用来停止视频声音
-function handleClose() {
-  if (videoRef.value) {
-    videoRef.value.pause(); // 暂停视频播放
+function getBaseModuleUrl() {
+  if (route.query && route.query.url) {
+    return String(route.query.url)
   }
-  videoUrl.value = ''; // 清空地址
+  return ''
+}
+
+function handleView(row) {
+  const baseUrl = getBaseModuleUrl()
+  const separator = baseUrl.includes('?') ? '&' : '?'
+  moduleUrl.value = baseUrl ? `${baseUrl}${separator}workflowId=${row.experimentId}` : ''
+  dialogMode.value = 'large'
+  dialogVisible.value = true
+}
+
+function setDialogMode(mode) {
+  dialogMode.value = mode
+}
+
+function toggleDialogFullscreen() {
+  dialogMode.value = dialogMode.value === 'fullscreen' ? 'large' : 'fullscreen'
+}
+
+function handleClose() {
+  moduleUrl.value = ''
+  dialogMode.value = 'large'
 }
 
 onMounted(() => {
@@ -423,13 +505,82 @@ onMounted(() => {
   color: #1677ff;
 }
 
-.video-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #000;
-  border-radius: 4px;
+:deep(.preview-dialog .el-dialog) {
+  border-radius: 16px;
   overflow: hidden;
+}
+
+:deep(.preview-dialog .el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+:deep(.preview-dialog .el-dialog__body) {
+  padding: 0;
+}
+
+:deep(.preview-dialog .el-dialog.is-fullscreen) {
+  border-radius: 0;
+}
+
+.preview-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preview-dialog-title {
+  color: #1f1f1f;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.preview-dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-dialog-action {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #1677ff;
+}
+
+.preview-dialog-action:hover,
+.preview-dialog-action.is-active {
+  background: #f0f7ff;
+}
+
+.preview-dialog-action.is-active {
+  font-weight: 600;
+}
+
+.preview-dialog-action-close {
+  color: #ff4d4f;
+}
+
+.preview-dialog-action-close:hover {
+  background: #fff2f0;
+}
+
+.module-frame-wrapper {
+  width: 100%;
+  background: #f5f7fa;
+  overflow: hidden;
+}
+
+.module-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border: none;
+  display: block;
 }
 
 @media (max-width: 1440px) {
@@ -473,6 +624,21 @@ onMounted(() => {
   :deep(.filter-action-group .el-button) {
     flex: 1 1 calc(50% - 5px);
     min-width: 0;
+  }
+
+  .preview-dialog-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .preview-dialog-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  :deep(.preview-dialog .el-dialog) {
+    width: 96vw !important;
+    margin-top: 2vh !important;
   }
 }
 </style>

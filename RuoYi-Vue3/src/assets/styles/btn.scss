@@ -154,7 +154,7 @@
   .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):hover,
   .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):focus {
     color: #fff;
-    background: linear-gradient(135deg, #379f66, #287c4f);
+    background: linear-gradient(135deg, #4096ff, #1677ff);
   }
 
   .el-button--default:not(.is-link):not(.is-text):not(.el-button--text),
@@ -190,8 +190,14 @@
   .el-button--success:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
     color: #fff;
     border: none;
-    background: linear-gradient(135deg, #34a853, #23873d);
-    box-shadow: 0 10px 18px rgba(35, 135, 61, 0.22);
+    background: linear-gradient(135deg, #1677ff, #0f5fe0);
+    box-shadow: 0 10px 18px rgba(22, 119, 255, 0.22);
+  }
+
+  .el-button--success:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):hover,
+  .el-button--success:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain):focus {
+    color: #fff;
+    background: linear-gradient(135deg, #4096ff, #1677ff);
   }
 
   .el-button--warning:not(.is-link):not(.is-text):not(.el-button--text):not(.is-plain) {
