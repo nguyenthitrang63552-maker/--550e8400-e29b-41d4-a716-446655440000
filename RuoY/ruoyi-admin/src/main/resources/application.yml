@@ -59,6 +59,16 @@ spring:
     basename: i18n/messages
   profiles:
     active: druid
+  # RabbitMQ 配置
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+      # 强烈建议开启手动确认，保证消息不丢失
+    listener:
+      simple:
+        acknowledge-mode: manual
   # 文件上传
   servlet:
     multipart:

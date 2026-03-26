@@ -60,7 +60,12 @@ public class DBussinessDataInfoController extends BaseController
     @GetMapping("/experimentInfoTree")
     public AjaxResult getDExperimentInfoTree()
     {
-        return AjaxResult.success(dExperimentInfoService.getExperimentInfoTree());
+        try{
+            return AjaxResult.success(dExperimentInfoService.getExperimentInfoTree());
+        }
+        catch (Exception e){
+            throw new ServiceException("查询试验信息树失败");
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:list')")
@@ -68,14 +73,25 @@ public class DBussinessDataInfoController extends BaseController
     public TableDataInfo getDDataInfoList(DdataInfo ddataInfo)
     {
         startPage();
-        return getDataTable(ddataService.selectDdataInfoList(ddataInfo));
+        try{
+            return getDataTable(ddataService.selectDdataInfoList(ddataInfo));
+        }
+        catch (Exception e){
+            throw new ServiceException("查询业务数据列表失败");
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:query')")
     @GetMapping("/{id}")
     public AjaxResult getDDataInfoByDdataId(@PathVariable Integer id)
     {
-        DdataInfo ddataInfo = ddataService.selectDdataInfoByDdataId(id);
+        DdataInfo ddataInfo = new DdataInfo();
+        try {
+            ddataInfo = ddataService.selectDdataInfoByDdataId(id);
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询业务数据详情失败");
+        }
         if (ddataInfo != null && StringUtils.isNotEmpty(ddataInfo.getDataFilePath()))
         {
             String relativePath = StringUtils.removeStart(ddataInfo.getDataFilePath(), "/");
@@ -91,7 +107,12 @@ public class DBussinessDataInfoController extends BaseController
     @Log(title = "导入业务数据", businessType = BusinessType.INSERT)
     public AjaxResult insertDDataInfo(@ModelAttribute DdataInfo ddataInfo, @RequestParam("file") MultipartFile file)
     {
-        return AjaxResult.success(ddataService.insertDdataInfo(ddataInfo, file));
+        try {
+            return AjaxResult.success(ddataService.insertDdataInfo(ddataInfo, file));
+        }
+        catch (Exception e) {
+            throw new ServiceException("导入业务数据失败");
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:update')")
@@ -99,14 +120,24 @@ public class DBussinessDataInfoController extends BaseController
     @Log(title = "更新业务数据", businessType = BusinessType.UPDATE)
     public AjaxResult updateDDataInfo(@RequestBody DdataInfo ddataInfo)
     {
-        return AjaxResult.success(ddataService.updateDdataInfo(ddataInfo));
+        try {
+            return AjaxResult.success(ddataService.updateDdataInfo(ddataInfo));
+        }
+        catch (Exception e) {
+            throw new ServiceException("更新业务数据失败");
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:update')")
     @GetMapping("/movePathTree")
     public AjaxResult getMovePathTree()
     {
-        return AjaxResult.success(ddataService.getMovePathTree());
+        try {
+            return AjaxResult.success(ddataService.getMovePathTree());
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询系统路径失败");
+        }
     }
 
     @PreAuthorize("@ss.hasPermi('dataInfo:info:delete')")
@@ -138,16 +169,27 @@ public class DBussinessDataInfoController extends BaseController
         {
             throw new ServiceException("预览参数不能为空");
         }
-
-        DExperimentInfo experimentInfo =
+        DExperimentInfo experimentInfo = new DExperimentInfo();
+        try {
+            experimentInfo =
                 dExperimentInfoService.selectDExperimentInfoByExperimentId(ddataInfo.getExperimentId());
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询试验信息失败");
+        }
         if (experimentInfo == null)
         {
             throw new ServiceException("试验信息不存在");
         }
 
-        DProjectInfo projectInfo =
+        DProjectInfo projectInfo = new DProjectInfo();
+        try {
+            projectInfo =
                 dProjectInfoService.selectDProjectInfoByProjectId(experimentInfo.getProjectId());
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询项目信息失败");
+        }
         if (projectInfo == null)
         {
             throw new ServiceException("项目不存在");
@@ -183,15 +225,27 @@ public class DBussinessDataInfoController extends BaseController
             throw new ServiceException("下载参数不能为空");
         }
 
-        DExperimentInfo experimentInfo =
+        DExperimentInfo experimentInfo = new DExperimentInfo();
+        try {
+            experimentInfo =
                 dExperimentInfoService.selectDExperimentInfoByExperimentId(ddataInfo.getExperimentId());
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询试验信息失败");
+        }
         if (experimentInfo == null)
         {
             throw new ServiceException("试验信息不存在");
         }
 
-        DProjectInfo projectInfo =
+        DProjectInfo projectInfo = new DProjectInfo();
+        try {
+            projectInfo =
                 dProjectInfoService.selectDProjectInfoByProjectId(experimentInfo.getProjectId());
+        }
+        catch (Exception e) {
+            throw new ServiceException("查询项目信息失败");
+        }
         if (projectInfo == null)
         {
             throw new ServiceException("项目不存在");

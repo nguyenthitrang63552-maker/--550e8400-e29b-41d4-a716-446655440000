@@ -207,18 +207,18 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
 
         if (!dExperimentInfo.getPath().startsWith("/"))
         {
-            throw new ServiceException("Invalid experiment path");
+            throw new ServiceException("试验路径无效");
         }
         if (!dExperimentInfo.getPath().substring(1).matches("^[a-zA-Z0-9_\\-\\u4e00-\\u9fa5]+$"))
         {
-            throw new ServiceException("Invalid experiment path");
+            throw new ServiceException("试验路径无效");
         }
 
         String experimentId = dExperimentInfo.getExperimentId();
         DExperimentInfo oldExperimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
         if (oldExperimentInfo == null)
         {
-            throw new ServiceException("Experiment not found");
+            throw new ServiceException("试验信息不存在");
         }
 
         DProjectInfo oldProjectInfo = requireProject(oldExperimentInfo.getProjectId());
@@ -251,6 +251,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
         }
 
         redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+        redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId);
         return dExperimentInfoMapper.updateDExperimentInfo(dExperimentInfo);
     }
 
@@ -326,6 +327,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
                 dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentInfo.getExperimentId());
                 deleteExperimentIds.add(experimentInfo.getExperimentId());
                 redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentInfo.getExperimentId());
+                redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentInfo.getExperimentId());
             }
         }
 
@@ -375,6 +377,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
             }
 
             redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+            redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId);
             return dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentId);
         }
     }
@@ -438,9 +441,13 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
         }
     }
     public String getExperimentPath(String experimentId){
+        if(redisCache.getCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId) != null){
+            return redisCache.getCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId).toString();
+        }
         DExperimentInfo experimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
         String experimentPath = experimentInfo.getPath();
         String projectPath = requireProject(experimentInfo.getProjectId()).getPath();
+        redisCache.setCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId, profile + projectPath + experimentPath);
         return profile + projectPath + experimentPath;
     }
 }

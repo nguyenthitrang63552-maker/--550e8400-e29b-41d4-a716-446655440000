@@ -45,6 +45,10 @@
             <!-- 这里指向上一级目录的 ruoyi-admin/lib -->
             <systemPath>${project.basedir}/../ruoyi-admin/lib/DmJdbcDriver8.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

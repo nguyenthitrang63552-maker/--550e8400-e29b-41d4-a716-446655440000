@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.TaskMapper">
+    <resultMap id="taskResultMap" type="com.ruoyi.Xidian.domain.Task">
+        <id column="id" property="id" />
+        <result column="task_code" property="taskCode" />
+        <result column="task_name" property="taskName" />
+        <result column="project_id" property="projectId" />
+        <result column="experiment_id" property="experimentID" />
+        <result column="carrier_type" property="carrierType" />
+        <result column="motion_model" property="motionModel" />
+        <result column="data_category_summary" property="dataCategorySummary" />
+        <result column="target_type" property="targetType" />
+        <result column="status" property="status" />
+        <result column="path" property="path" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="create_by" property="createBy" />
+
+        <association property="startCoordinate" javaType="com.ruoyi.Xidian.domain.Coordinate" columnPrefix="start_">
+            <result property="longitude" column="longitude" />
+            <result property="latitude" column="latitude" />
+            <result property="altitude" column="altitude" />
+        </association>
+
+        <association property="endCoordinate" javaType="com.ruoyi.Xidian.domain.Coordinate" columnPrefix="end_">
+            <result property="longitude" column="longitude" />
+            <result property="latitude" column="latitude" />
+            <result property="altitude" column="altitude" />
+        </association>
+
+        <association property="startSpeed" javaType="com.ruoyi.Xidian.domain.Vector3" columnPrefix="start_speed_">
+            <result property="x" column="x" />
+            <result property="y" column="y" />
+            <result property="z" column="z" />
+        </association>
+
+        <association property="startAttitude" javaType="com.ruoyi.Xidian.domain.Attitude">
+            <result property="roll" column="roll_angle" />
+            <result property="pitch" column="pitch_angle" />
+            <result property="yaw" column="yaw_angle" />
+        </association>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.ruoyi.Xidian.domain.Task">
+        insert into SYSTEM_COLLABORATION_TEST.TASK (
+            ID,
+            TASK_CODE,
+            TASK_NAME,
+            PROJECT_ID,
+            EXPERIMENT_ID,
+            CARRIER_TYPE,
+            MOTION_MODEL,
+            START_LONGITUDE,
+            START_LATITUDE,
+            START_ALTITUDE,
+            END_LONGITUDE,
+            END_LATITUDE,
+            END_ALTITUDE,
+            START_SPEED_X,
+            START_SPEED_Y,
+            START_SPEED_Z,
+            ROLL_ANGLE,
+            PITCH_ANGLE,
+            YAW_ANGLE,
+            DATA_CATEGORY_SUMMARY,
+            TARGET_TYPE,
+            STATUS,
+            PATH,
+            CREATE_BY,
+            CREATE_TIME,
+            UPDATE_TIME
+        ) values (
+                     #{id},
+                     #{taskCode},
+                     #{taskName},
+                     #{projectId},
+                     #{experimentId},
+                     #{carrierType},
+                     #{motionModel},
+                     #{startCoordinate.longitude},
+                     #{startCoordinate.latitude},
+                     #{startCoordinate.altitude},
+                     #{endCoordinate.longitude},
+                     #{endCoordinate.latitude},
+                     #{endCoordinate.altitude},
+                     #{startSpeed.x},
+                     #{startSpeed.y},
+                     #{startSpeed.z},
+                     #{startAttitude.roll},
+                     #{startAttitude.pitch},
+                     #{startAttitude.yaw},
+                     #{dataCategorySummary},
+                     #{targetType},
+                     #{status},
+                     #{path},
+                     #{createBy},
+                     #{createTime},
+                     #{updateTime}
+                 )
+    </insert>
+    <update id="update" parameterType="com.ruoyi.Xidian.domain.Task">
+        update SYSTEM_COLLABORATION_TEST.TASK
+        set STATUS = #{status}, PATH = #{path}, UPDATE_TIME = #{updateTime}
+        where ID = #{id}
+    </update>
+    <delete id="deleteById" parameterType="java.lang.Long">
+        delete from SYSTEM_COLLABORATION_TEST.TASK where ID = #{id}
+    </delete>
+    <select id="selectList" resultMap="taskResultMap">
+        select * from SYSTEM_COLLABORATION_TEST.TASK
+    </select>
+    <select id="selectById" resultMap="taskResultMap">
+        select * from SYSTEM_COLLABORATION_TEST.TASK where ID = #{id}
+    </select>
+    <select id="selectTaskList" resultType="com.ruoyi.Xidian.domain.Task">
+        select * from SYSTEM_COLLABORATION_TEST.TASK
+        <where>
+            <if test="projectId != null">
+            and PROJECT_ID = #{projectId}
+            </if>
+            <if test="experimentId != null">
+            and EXPERIMENT_ID = #{experimentId}
+            </if>
+            <if test="createBy != null">
+            and CREATE_BY = #{createBy}
+            </if>
+            <if test="taskName != null">
+            and TASK_NAME = #{taskName}
+            </if>
+        </where>
+    </select>
+
+</mapper>
+

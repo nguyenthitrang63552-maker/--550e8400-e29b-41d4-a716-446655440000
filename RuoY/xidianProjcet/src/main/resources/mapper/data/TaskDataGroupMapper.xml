@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.Xidian.mapper.TaskDataGroupMapper">
+    <resultMap id="taskDataGroupResultMap" type="com.ruoyi.Xidian.domain.TaskDataGroup">
+        <id column="id" property="id" />
+        <result column="task_id" property="taskId" />
+        <result column="group_code" property="groupCode" />
+        <result column="group_name" property="groupName" />
+        <result column="sort_no" property="sortNo" />
+        <result column="enabled" property="enabled" />
+        <result column="data_name" property="dataName" />
+        <result column="output_type" property="outputType" />
+        <result column="start_time_ms" property="startTimeMs" />
+        <result column="end_time_ms" property="endTimeMs" />
+        <result column="frequency_hz" property="frequencyHz" />
+        <result column="status" property="status" />
+    </resultMap>
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into task_data_group
+        (task_id, group_code, group_name, sort_no, enabled, data_name, output_type, start_time_ms, end_time_ms, frequency_hz)
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item.taskId}, #{item.groupCode}, #{item.groupName}, #{item.sortNo}, #{item.enabled}, #{item.dataName}, #{item.outputType}, #{item.startTimeMs}, #{item.endTimeMs}, #{item.frequencyHz}
+        </foreach>
+    </insert>
+    <update id="update" parameterType="com.ruoyi.Xidian.domain.TaskDataGroup">
+        update task_data_group
+        set
+            task_id = #{taskId},
+            group_code = #{groupCode},
+            group_name = #{groupName},
+            sort_no = #{sortNo},
+            enabled = #{enabled},
+            data_name = #{dataName},
+            output_type = #{outputType},
+            start_time_ms = #{startTimeMs},
+            end_time_ms = #{endTimeMs},
+            frequency_hz = #{frequencyHz},
+            status = #{status}
+        where id = #{id}
+    </update>
+    <delete id="deleteByTaskId" parameterType="java.lang.Long">
+        delete from task_data_group where task_id = #{taskId}
+    </delete>
+    <select id="selectById" resultType="com.ruoyi.Xidian.domain.TaskDataGroup">
+        select * from task_data_group where id = #{id}
+    </select>
+    <select id="selectByTaskId" resultMap="taskDataGroupResultMap">
+        select * from task_data_group where task_id = #{taskId}
+    </select>
+
+</mapper>

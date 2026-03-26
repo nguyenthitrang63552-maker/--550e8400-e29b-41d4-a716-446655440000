@@ -1,9 +1,11 @@
 package com.ruoyi.Xidian.domain;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 //坐标值对象
-public class Coordinate {
+public class Coordinate implements Serializable {
+    private static final long serialVersionUID = 1L;
     private BigDecimal longitude;
     private BigDecimal latitude;
     private BigDecimal altitude;

@@ -867,7 +867,7 @@ async function loadDetailTablePreview() {
   } catch (error) {
     detailTableRows.value = []
     detailPreviewTotal.value = 0
-    ElMessage.error("预览请求失败: " + (error.message || "未知错误"))
+    //ElMessage.error("预览请求失败: " + (error.message || "未知错误"))
   } finally {
     detailPreviewLoading.value = false
   }

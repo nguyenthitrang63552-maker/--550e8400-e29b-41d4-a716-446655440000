@@ -50,6 +50,7 @@ public class CacheConstants
      * 试验信息主缓存 redis key
      */
     public static final String EXPERIMENT_INFO_KEY = "experiment_info:";
+    public static final String EXPERIMENT_PATH_KEY = "experiment_path:";
     /**
      * 项目信息主缓存 redis key
      */
