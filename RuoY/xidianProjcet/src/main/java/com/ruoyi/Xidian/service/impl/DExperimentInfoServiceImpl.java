@@ -2,7 +2,8 @@ package com.ruoyi.Xidian.service.impl;
 
 import com.ruoyi.Xidian.domain.DExperimentInfo;
 import com.ruoyi.Xidian.domain.DProjectInfo;
-import com.ruoyi.Xidian.domain.TreeTableVo;
+import com.ruoyi.Xidian.domain.TreeTable;
+import com.ruoyi.Xidian.domain.VO.TreeTableVo;
 import com.ruoyi.Xidian.mapper.DExperimentInfoMapper;
 import com.ruoyi.Xidian.mapper.DProjectInfoMapper;
 import com.ruoyi.Xidian.service.IDExperimentInfoService;
@@ -46,74 +47,54 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
     private final String profile = RuoYiConfig.getProfile() + "/data";
 
     @Override
-    public List<TreeTableVo> selectDExperimentInfoTree(TreeTableVo treeTableVo)
-    {
+    public List<TreeTableVo> selectExperimentInfoTree(TreeTable treeTable) {
         List<TreeTableVo> treeTables = new ArrayList<>();
         Map<Long, Integer> hashtable = new HashMap<>();
         int index = 0;
-
-        if (treeTableVo.getId() == null || !treeTableVo.getId().matches(".*[a-zA-Z-].*"))
-        {
+        if (treeTable.getId() == null || !treeTable.getId().matches(".*[a-zA-Z-].*")) {
             DProjectInfo dProjectInfo = new DProjectInfo();
-            if (StringUtils.isNotEmpty(treeTableVo.getId()))
-            {
-                dProjectInfo.setProjectId(Long.valueOf(treeTableVo.getId()));
+            if (StringUtils.isNotEmpty(treeTable.getId())) {
+                dProjectInfo.setProjectId(Long.valueOf(treeTable.getId()));
             }
-            dProjectInfo.setProjectName(treeTableVo.getName());
-            dProjectInfo.setParams(treeTableVo.getParams());
-            dProjectInfo.setCreateBy(treeTableVo.getCreateBy());
+            dProjectInfo.setProjectName(treeTable.getName());
             List<DProjectInfo> dProjectInfos = dProjectInfoMapper.selectDProjectInfoList(dProjectInfo);
-
-            for (DProjectInfo projectInfo : dProjectInfos)
-            {
+            for (DProjectInfo projectInfo : dProjectInfos){
                 TreeTableVo vo = new TreeTableVo();
                 vo.setId(projectInfo.getProjectId().toString());
                 vo.setName(projectInfo.getProjectName());
-                vo.setCreateBy(projectInfo.getCreateBy());
-                vo.setCreateTime(projectInfo.getCreateTime());
-                vo.setContentDesc(projectInfo.getProjectContentDesc());
-                vo.setPath(projectInfo.getPath());
-                vo.setParentId(0L);
-                vo.setAncestors("0");
                 vo.setType("project");
                 hashtable.put(projectInfo.getProjectId(), index);
                 index++;
                 treeTables.add(vo);
             }
         }
-
         DExperimentInfo query = new DExperimentInfo();
-        query.setExperimentId(treeTableVo.getId());
-        query.setExperimentName(treeTableVo.getName());
-        query.setParams(treeTableVo.getParams());
-        query.setCreateBy(treeTableVo.getCreateBy());
+        query.setExperimentId(treeTable.getId());
+        query.setExperimentName(treeTable.getName());
         List<DExperimentInfo> experimentInfos = dExperimentInfoMapper.selectDExperimentInfoList(query);
-
-        for (DExperimentInfo experimentInfo : experimentInfos)
-        {
+        for (DExperimentInfo experimentInfo : experimentInfos){
             TreeTableVo vo = new TreeTableVo();
             vo.setId(experimentInfo.getExperimentId());
             vo.setName(experimentInfo.getExperimentName());
-            vo.setTargetId(experimentInfo.getTargetId());
-            vo.setStartTime(experimentInfo.getStartTime());
-            vo.setTargetType(experimentInfo.getTargetType());
-            vo.setCreateBy(experimentInfo.getCreateBy());
-            vo.setCreateTime(experimentInfo.getCreateTime());
-            vo.setLocation(experimentInfo.getLocation());
-            vo.setContentDesc(experimentInfo.getContentDesc());
-            vo.setPath(experimentInfo.getPath());
-            vo.setParentId(experimentInfo.getProjectId());
-            vo.setAncestors("0," + experimentInfo.getProjectId());
             vo.setType("experiment");
-
-            int parentIndex = hashtable.getOrDefault(vo.getParentId(), -1);
+            vo.setParentName(experimentInfo.getProjectName());
+            int parentIndex = hashtable.getOrDefault(experimentInfo.getProjectId(), -1);
             if (parentIndex != -1)
             {
                 ((List<TreeTableVo>) treeTables.get(parentIndex).getChildren()).add(vo);
             }
             else
             {
-                treeTables.add(vo);
+                Long parentId = experimentInfo.getProjectId();
+                DProjectInfo dProjectInfo = dProjectInfoMapper.selectDProjectInfoByProjectId(parentId);
+                hashtable.put(dProjectInfo.getProjectId(), index);
+                TreeTableVo projectVo = new TreeTableVo();
+                projectVo.setId(parentId.toString());
+                projectVo.setName(dProjectInfo.getProjectName());
+                projectVo.setType("project");
+                treeTables.add(projectVo);
+                ((List<TreeTableVo>) treeTables.get(index).getChildren()).add(vo);
+                index++;
             }
         }
         return treeTables;
@@ -124,12 +105,15 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
     {
         if (redisCache.getCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId) != null)
         {
-            return redisCache.getCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+            DExperimentInfo dExperimentInfo = redisCache.getCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
+            dExperimentInfo.setFullPath(getFrontEndExperimentPath(experimentId));
+            return dExperimentInfo;
         }
         DExperimentInfo dExperimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
         if (dExperimentInfo != null)
         {
             redisCache.setCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId, dExperimentInfo);
+            dExperimentInfo.setFullPath(getFrontEndExperimentPath(experimentId));
         }
         return dExperimentInfo;
     }
@@ -385,7 +369,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
     @Override
     public List<TreeTableVo> getExperimentInfoTree()
     {
-        return selectDExperimentInfoTree(new TreeTableVo());
+        return selectExperimentInfoTree(new TreeTable());
     }
 
     private DProjectInfo requireProject(Long projectId)
@@ -449,5 +433,10 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
         String projectPath = requireProject(experimentInfo.getProjectId()).getPath();
         redisCache.setCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId, profile + projectPath + experimentPath);
         return profile + projectPath + experimentPath;
+    }
+
+    //返回前端所需的试验信息路径（./data/项目路径/试验路径/）
+    public String getFrontEndExperimentPath(String experimentId){
+        return getExperimentPath(experimentId).replace(profile, "./data");
     }
 }

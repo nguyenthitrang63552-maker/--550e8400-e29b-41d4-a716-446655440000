@@ -3,7 +3,8 @@ package com.ruoyi.Xidian.service;
 import java.util.List;
 import com.ruoyi.Xidian.domain.DExperimentInfo;
 import com.ruoyi.Xidian.domain.DProjectInfo;
-import com.ruoyi.Xidian.domain.TreeTableVo;
+import com.ruoyi.Xidian.domain.TreeTable;
+import com.ruoyi.Xidian.domain.VO.TreeTableVo;
 
 /**
  * 试验信息主Service接口
@@ -62,9 +63,10 @@ public interface IDExperimentInfoService
      */
     public int deleteDExperimentInfoByExperimentId(String experimentId);
 
-    List<TreeTableVo> selectDExperimentInfoTree(TreeTableVo treeTableVo);
 
     List<TreeTableVo> getExperimentInfoTree();
 
     String getExperimentPath(String experimentId);
+
+    List<TreeTableVo> selectExperimentInfoTree(TreeTable treeTable);
 }

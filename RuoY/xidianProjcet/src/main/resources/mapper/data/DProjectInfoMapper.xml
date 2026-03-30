@@ -31,6 +31,7 @@
                 AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
             </if>
         </where>
+        order by CREATE_TIME desc
     </select>
 
     <select id="selectDProjectInfoByProjectId" parameterType="Long" resultMap="DProjectInfoResult">

@@ -5,7 +5,7 @@ import com.ruoyi.common.core.domain.TreeEntity;
 
 import java.util.Date;
 
-public class TreeTableVo extends TreeEntity {
+public class TreeTable extends TreeEntity {
     private String id;
     private String name;
     private String targetId;

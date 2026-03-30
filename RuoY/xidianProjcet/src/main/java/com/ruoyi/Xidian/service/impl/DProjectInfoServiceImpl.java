@@ -40,9 +40,12 @@ public class DProjectInfoServiceImpl implements IDProjectInfoService
     {
         if (redisCache.getCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId) != null)
         {
-            return redisCache.getCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId);
+            DProjectInfo projectInfo = redisCache.getCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId);
+            projectInfo.setFullPath("./data" + projectInfo.getPath());
+            return projectInfo;
         }
         DProjectInfo projectInfo = dProjectInfoMapper.selectDProjectInfoByProjectId(projectId);
+        projectInfo.setFullPath("./data" + projectInfo.getPath());
         redisCache.setCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId, projectInfo);
         return projectInfo;
     }

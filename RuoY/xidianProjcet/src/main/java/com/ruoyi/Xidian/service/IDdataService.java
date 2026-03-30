@@ -22,4 +22,11 @@ public interface IDdataService {
     Integer deleteDdataInfos(List<Integer> ids);
 
     List<Map<String, Object>> getMovePathTree();
+
+    void uploadFiles(List<MultipartFile> files, String experimentId);
+
+    default void uploadFiles(List<MultipartFile> files, List<String> relativePaths, String experimentId)
+    {
+        uploadFiles(files, experimentId);
+    }
 }

@@ -210,7 +210,7 @@ public class DBussinessDataInfoController extends BaseController
         try (PathLockManager.LockHandle ignored = pathLockManager.lockRead(projectRoot, experimentRoot, absolutePath))
         {
             Map<String, Object> previewData =
-                    FileUtils.previewExcelByPage(absolutePath.toString(), pageNum, pageSize);
+                    FileUtils.previewFileByPage(absolutePath.toString(), pageNum, pageSize);
             return success(previewData);
         }
     }

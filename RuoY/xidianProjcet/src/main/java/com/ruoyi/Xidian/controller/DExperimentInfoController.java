@@ -1,28 +1,13 @@
 package com.ruoyi.Xidian.controller;
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.ruoyi.Xidian.domain.DExperimentInfo;
 import com.ruoyi.Xidian.domain.DProjectInfo;
-import com.ruoyi.Xidian.domain.DTargetInfo;
-import com.ruoyi.Xidian.domain.TreeTableVo;
+import com.ruoyi.Xidian.domain.TreeTable;
+import com.ruoyi.Xidian.domain.VO.TreeTableVo;
 import com.ruoyi.Xidian.service.IDExperimentInfoService;
 import com.ruoyi.Xidian.service.IDProjectInfoService;
 import com.ruoyi.Xidian.service.IDTargetInfoService;
+import com.ruoyi.Xidian.service.IDdataService;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -30,8 +15,23 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
-import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.utils.uuid.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/data/info")
@@ -46,31 +46,25 @@ public class DExperimentInfoController extends BaseController
     @Autowired
     private IDTargetInfoService dTargetInfoService;
 
-    @PreAuthorize("@ss.hasPermi('data:info:list')")
-    @GetMapping("/list")
-    public AjaxResult list(TreeTableVo treeTableVo)
-    {
-        List<TreeTableVo> treeTableVos =new ArrayList<>();
-        try {
-            treeTableVos = dExperimentInfoService.selectDExperimentInfoTree(treeTableVo);
-        }catch (Exception e){
-            throw buildSafeException("查询试验信息失败", e);
-        }
-        return success(treeTableVos);
-    }
+    @Autowired
+    private IDdataService ddataService;
 
-    @PreAuthorize("@ss.hasPermi('data:info:export')")
-    @Log(title = "导出试验信息", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
-    public void export(HttpServletResponse response, DExperimentInfo dExperimentInfo)
+    @PreAuthorize("@ss.hasPermi('data:info:list')")
+    @GetMapping("/tree")
+    public AjaxResult tree(TreeTable treeTable)
     {
-        try{
-            List<DExperimentInfo> list = dExperimentInfoService.selectDExperimentInfoList(dExperimentInfo);
-            ExcelUtil<DExperimentInfo> util = new ExcelUtil<DExperimentInfo>(DExperimentInfo.class);
-            util.exportExcel(response, list, "试验信息主数据");
+        if (treeTable == null)
+        {
+            treeTable = new TreeTable();
         }
-        catch (Exception e){
-            throw buildSafeException("导出试验信息失败", e);
+        try
+        {
+            List<TreeTableVo> treeTables = dExperimentInfoService.selectExperimentInfoTree(treeTable);
+            return success(treeTables);
+        }
+        catch (Exception e)
+        {
+            throw buildSafeException("查询试验信息树失败", e);
         }
     }
 
@@ -79,20 +73,23 @@ public class DExperimentInfoController extends BaseController
     public AjaxResult getInfo(@PathVariable(value = "infoId", required = false) String infoId, @RequestParam String type)
     {
         validateInfoType(type);
-        AjaxResult ajax = AjaxResult.success();
         if ("project".equals(type))
         {
             if (infoId == null || infoId.trim().isEmpty())
             {
                 throw new ServiceException("项目id不能为空");
             }
-            try{
+            try
+            {
                 return success(dProjectInfoService.selectDProjectInfoByProjectId(Long.valueOf(infoId)));
             }
-            catch (Exception e){
+            catch (Exception e)
+            {
                 throw buildSafeException("查询项目信息失败", e);
             }
         }
+
+        AjaxResult ajax = AjaxResult.success();
         try
         {
             ajax.put("projects", dProjectInfoService.selectAllDProjectInfo());
@@ -109,10 +106,10 @@ public class DExperimentInfoController extends BaseController
         }
     }
 
-    @PreAuthorize("@ss.hasPermi('data:info:add')")
-    @Log(title = "添加项目或试验信息", businessType = BusinessType.INSERT)
-    @PostMapping
-    public AjaxResult add(@RequestBody TreeTableVo treeTableVo)
+    @PreAuthorize("@ss.hasPermi('data:info:addProject')")
+    @Log(title = "新增项目信息", businessType = BusinessType.INSERT)
+    @PostMapping("/project")
+    public AjaxResult addProject(@RequestBody TreeTable treeTableVo)
     {
         validateInfoType(treeTableVo.getType());
         if ("project".equals(treeTableVo.getType()))
@@ -121,137 +118,142 @@ public class DExperimentInfoController extends BaseController
             dProjectInfo.setProjectName(treeTableVo.getName());
             dProjectInfo.setCreateBy(SecurityUtils.getUsername());
             dProjectInfo.setProjectContentDesc(treeTableVo.getContentDesc());
-            try{
+            try
+            {
                 return toAjax(dProjectInfoService.insertDProjectInfo(dProjectInfo));
             }
-            catch (Exception e){
-                throw buildSafeException("添加项目信息失败", e);
+            catch (Exception e)
+            {
+                throw buildSafeException("新增项目信息失败", e);
             }
+        }else{
+            return AjaxResult.error("新增项目信息失败");
         }
-
-        DExperimentInfo dExperimentInfo = new DExperimentInfo();
-        dExperimentInfo.setExperimentId(UUID.randomUUID().toString());
-        dExperimentInfo.setExperimentName(treeTableVo.getName());
-        dExperimentInfo.setCreateBy(SecurityUtils.getUsername());
-        dExperimentInfo.setContentDesc(treeTableVo.getContentDesc());
-        dExperimentInfo.setLocation(treeTableVo.getLocation());
-        dExperimentInfo.setTargetId(treeTableVo.getTargetId());
-        dExperimentInfo.setTargetType(treeTableVo.getTargetType());
-        dExperimentInfo.setProjectId(treeTableVo.getParentId());
-        dExperimentInfo.setStartTime(treeTableVo.getStartTime());
-        dExperimentInfo.setPath(treeTableVo.getPath());
-        try{
-            return toAjax(dExperimentInfoService.insertDExperimentInfo(dExperimentInfo));
+    }
+    @PreAuthorize("@ss.hasPermi('data:info:addExperiment')")
+    @Log(title = "新增试验信息", businessType = BusinessType.INSERT)
+    @PostMapping("/experiment")
+    public AjaxResult addExperiment(
+            @ModelAttribute TreeTable treeTableVo,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam(value = "relativePaths", required = false) List<String> relativePaths)
+    {
+        validateInfoType(treeTableVo.getType());
+        AjaxResult ajax = AjaxResult.success();
+        if("experiment".equals(treeTableVo.getType())){
+            DExperimentInfo dExperimentInfo = new DExperimentInfo();
+            dExperimentInfo.setExperimentId(UUID.randomUUID().toString());
+            dExperimentInfo.setExperimentName(treeTableVo.getName());
+            dExperimentInfo.setCreateBy(SecurityUtils.getUsername());
+            dExperimentInfo.setContentDesc(treeTableVo.getContentDesc());
+            dExperimentInfo.setLocation(treeTableVo.getLocation());
+            dExperimentInfo.setTargetId(treeTableVo.getTargetId());
+            dExperimentInfo.setTargetType(treeTableVo.getTargetType());
+            dExperimentInfo.setProjectId(treeTableVo.getParentId());
+            dExperimentInfo.setStartTime(treeTableVo.getStartTime());
+            dExperimentInfo.setPath(treeTableVo.getPath());
+            try
+            {
+                ajax.put(AjaxResult.DATA_TAG, dExperimentInfoService.insertDExperimentInfo(dExperimentInfo));
+                ddataService.uploadFiles(files, dExperimentInfo.getExperimentId());
+                //将文件上传到服务器
+                ddataService.uploadFiles(files, dExperimentInfo.getExperimentId());
+            }
+            catch (Exception e)
+            {
+                throw buildSafeException("新增试验信息失败", e);
+            }
+        }else{
+            return AjaxResult.error("新增试验信息失败");
         }
-        catch (Exception e){
-            throw buildSafeException("添加试验信息失败", e);
-        }
+        return ajax;
     }
 
     @PreAuthorize("@ss.hasPermi('data:info:edit')")
-    @Log(title = "修改项目或试验信息", businessType = BusinessType.UPDATE)
+    @Log(title = "项目或试验信息", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody TreeTableVo treeTableVo)
+    public AjaxResult edit(@RequestBody TreeTable treeTableVo)
     {
-        try{
-            return updateInfoByType(treeTableVo.getId(), treeTableVo.getType(), treeTableVo);
-        }
-        catch (ServiceException e){
-            throw e;
-        }
-        catch (Exception e){
-            throw buildSafeException(buildOperateErrorMessage("修改", treeTableVo == null ? null : treeTableVo.getType()), e);
-        }
+        return updateInfoByType(treeTableVo.getId(), treeTableVo.getType(), treeTableVo);
     }
 
     @PreAuthorize("@ss.hasPermi('data:info:edit')")
-    @Log(title = "修改项目或试验信息", businessType = BusinessType.UPDATE)
+    @Log(title = "项目或试验信息", businessType = BusinessType.UPDATE)
     @PutMapping("/{infoId}")
-    public AjaxResult editById(@PathVariable String infoId, @RequestParam String type, @RequestBody TreeTableVo treeTableVo)
+    public AjaxResult editById(@PathVariable String infoId, @RequestParam String type, @RequestBody TreeTable treeTableVo)
     {
-        try{
-            return updateInfoByType(infoId, type, treeTableVo);
-        }
-        catch (ServiceException e){
-            throw e;
-        }
-        catch (Exception e){
-            throw buildSafeException(buildOperateErrorMessage("修改", type), e);
-        }
+        return updateInfoByType(infoId, type, treeTableVo);
     }
 
     @PreAuthorize("@ss.hasPermi('data:info:remove')")
-    @Log(title = "删除项目或试验信息", businessType = BusinessType.DELETE)
+    @Log(title = "项目或试验信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{infoId}")
     public AjaxResult removeById(@PathVariable String infoId, @RequestParam String type)
     {
-        try{
-            deleteInfoByType(infoId, type);
-            return AjaxResult.success();
-        }
-        catch (ServiceException e){
-            throw e;
-        }
-        catch (Exception e){
-            throw buildSafeException(buildOperateErrorMessage("删除", type), e);
-        }
+        deleteInfoByType(infoId, type);
+        return AjaxResult.success();
     }
 
     @PreAuthorize("@ss.hasPermi('data:info:remove')")
-    @Log(title = "删除项目或试验信息", businessType = BusinessType.DELETE)
+    @Log(title = "项目或试验信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{experimentIds}/project/{projectIds}")
     public AjaxResult remove(@PathVariable String[] experimentIds, @PathVariable Long[] projectIds)
     {
         List<String> errors = new ArrayList<>();
         boolean hasExperimentIds = experimentIds != null && experimentIds.length > 0;
         boolean hasProjectIds = projectIds != null && projectIds.length > 0;
-        if (hasProjectIds || hasExperimentIds)
+        if (!hasProjectIds && !hasExperimentIds)
         {
-            if (hasExperimentIds)
-            {
-                try
-                {
-                    dExperimentInfoService.deleteDExperimentInfoByExperimentIds(experimentIds);
-                }
-                catch (Exception e)
-                {
-                    errors.add("删除试验信息失败");
-                }
-            }
-            if (hasProjectIds)
-            {
-                try
-                {
-                    dProjectInfoService.deleteDProjectInfoByProjectIds(projectIds);
-                }
-                catch (Exception e)
-                {
-                    errors.add("删除项目信息失败");
-                }
-            }
-            if (!errors.isEmpty())
-            {
-                return AjaxResult.error(String.join("；", errors));
-            }
-            return AjaxResult.success();
+            return AjaxResult.error("请选择要删除的数据");
         }
-        return AjaxResult.error("请选择要删除的数据");
+
+        if (hasExperimentIds)
+        {
+            try
+            {
+                dExperimentInfoService.deleteDExperimentInfoByExperimentIds(experimentIds);
+            }
+            catch (Exception e)
+            {
+                errors.add(resolveExceptionMessage(e, "删除试验信息失败"));
+            }
+        }
+
+        if (hasProjectIds)
+        {
+            try
+            {
+                dProjectInfoService.deleteDProjectInfoByProjectIds(projectIds);
+            }
+            catch (Exception e)
+            {
+                errors.add(resolveExceptionMessage(e, "删除项目信息失败"));
+            }
+        }
+
+        if (!errors.isEmpty())
+        {
+            return AjaxResult.error(joinErrorMessages(errors));
+        }
+        return AjaxResult.success();
     }
 
     @GetMapping("/experimentInfos")
     public TableDataInfo getExperimentInfos(DExperimentInfo dExperimentInfo)
     {
         startPage();
-        try{
+        try
+        {
             List<DExperimentInfo> dExperimentInfos = dExperimentInfoService.selectDExperimentInfoList(dExperimentInfo);
             return getDataTable(dExperimentInfos);
         }
-        catch (Exception e){
+        catch (Exception e)
+        {
             throw buildSafeException("查询试验信息失败", e);
         }
     }
 
-    private AjaxResult updateInfoByType(String infoId, String type, TreeTableVo treeTableVo)
+    private AjaxResult updateInfoByType(String infoId, String type, TreeTable treeTableVo)
     {
         if (infoId == null || infoId.trim().isEmpty())
         {
@@ -260,9 +262,11 @@ public class DExperimentInfoController extends BaseController
         validateInfoType(type);
         treeTableVo.setId(infoId);
         treeTableVo.setType(type);
+
         if ("project".equals(type))
         {
-            try{
+            try
+            {
                 DProjectInfo dProjectInfo = new DProjectInfo();
                 dProjectInfo.setProjectId(Long.valueOf(treeTableVo.getId()));
                 dProjectInfo.setProjectName(treeTableVo.getName());
@@ -271,8 +275,9 @@ public class DExperimentInfoController extends BaseController
                 dProjectInfo.setPath(treeTableVo.getPath());
                 return toAjax(dProjectInfoService.updateDProjectInfo(dProjectInfo));
             }
-            catch (Exception e){
-                throw buildSafeException("修改项目失败", e);
+            catch (Exception e)
+            {
+                throw buildSafeException("修改项目信息失败", e);
             }
         }
 
@@ -286,11 +291,13 @@ public class DExperimentInfoController extends BaseController
         dExperimentInfo.setContentDesc(treeTableVo.getContentDesc());
         dExperimentInfo.setStartTime(treeTableVo.getStartTime());
         dExperimentInfo.setPath(treeTableVo.getPath());
-        try{
+        try
+        {
             return toAjax(dExperimentInfoService.updateDExperimentInfo(dExperimentInfo));
         }
-        catch (Exception e){
-            throw buildSafeException("修改试验失败", e);
+        catch (Exception e)
+        {
+            throw buildSafeException("修改试验信息失败", e);
         }
     }
 
@@ -303,16 +310,23 @@ public class DExperimentInfoController extends BaseController
         validateInfoType(type);
         if ("project".equals(type))
         {
-            try{
+            try
+            {
                 dProjectInfoService.deleteDProjectInfoByProjectId(Long.valueOf(infoId));
-            }catch (Exception e){
+            }
+            catch (Exception e)
+            {
                 throw buildSafeException("删除项目失败", e);
             }
             return;
         }
-        try{
+
+        try
+        {
             dExperimentInfoService.deleteDExperimentInfoByExperimentId(infoId);
-        }catch (Exception e){
+        }
+        catch (Exception e)
+        {
             throw buildSafeException("删除试验失败", e);
         }
     }
@@ -325,24 +339,73 @@ public class DExperimentInfoController extends BaseController
         }
     }
 
-    private String buildOperateErrorMessage(String action, String type)
-    {
-        if ("project".equals(type))
-        {
-            return action + "项目信息失败";
-        }
-        if ("experiment".equals(type))
-        {
-            return action + "试验信息失败";
-        }
-        return action + "信息失败";
-    }
-
     private ServiceException buildSafeException(String message, Exception e)
     {
-        ServiceException serviceException = new ServiceException(message);
+        ServiceException serviceException = extractServiceException(e);
+        if (serviceException != null)
+        {
+            return serviceException;
+        }
+        serviceException = new ServiceException(message);
+        serviceException.setDetailMessage(e == null ? null : e.getMessage());
         serviceException.initCause(e);
         return serviceException;
+    }
+
+    private ServiceException extractServiceException(Throwable throwable)
+    {
+        Throwable current = throwable;
+        while (current != null)
+        {
+            if (current instanceof ServiceException)
+            {
+                return (ServiceException) current;
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
+    private String resolveExceptionMessage(Exception e, String defaultMessage)
+    {
+        ServiceException serviceException = extractServiceException(e);
+        if (serviceException != null && serviceException.getMessage() != null && !serviceException.getMessage().trim().isEmpty())
+        {
+            return normalizeErrorMessage(serviceException.getMessage());
+        }
+        if (e != null && e.getMessage() != null && !e.getMessage().trim().isEmpty())
+        {
+            return normalizeErrorMessage(e.getMessage());
+        }
+        return defaultMessage;
+    }
+
+    private String joinErrorMessages(List<String> errors)
+    {
+        StringBuilder builder = new StringBuilder();
+        for (String error : errors)
+        {
+            String normalized = normalizeErrorMessage(error);
+            if (normalized.isEmpty())
+            {
+                continue;
+            }
+            if (builder.length() > 0)
+            {
+                builder.append("；");
+            }
+            builder.append(normalized);
+        }
+        return builder.length() > 0 ? builder.toString() : "操作失败";
+    }
+
+    private String normalizeErrorMessage(String message)
+    {
+        if (message == null)
+        {
+            return "";
+        }
+        return message.replace("\r\n", "；").replace("\n", "；").trim();
     }
 
     @GetMapping("/path/{experimentId}")
@@ -352,14 +415,16 @@ public class DExperimentInfoController extends BaseController
         {
             throw new ServiceException("试验id不能为空");
         }
-        String path = "";
-        AjaxResult ajaxResult = AjaxResult.success();
-        try{
-            path = dExperimentInfoService.getExperimentPath(experimentId);
-        }catch (Exception e){
+        try
+        {
+            String path = dExperimentInfoService.getExperimentPath(experimentId);
+            AjaxResult ajaxResult = AjaxResult.success();
+            ajaxResult.put("data", path);
+            return ajaxResult;
+        }
+        catch (Exception e)
+        {
             throw buildSafeException("获取试验路径失败", e);
         }
-        ajaxResult.put("data", path);
-        return ajaxResult;
     }
 }

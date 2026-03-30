@@ -34,6 +34,7 @@ public class DdataInfo extends BaseEntity {
     private Integer pageSize;
     private Boolean isSimulation;
     private String FileName;
+    private String fullPath;
 
     public void setId(Integer id) {
         this.id = id;
@@ -217,5 +218,13 @@ public class DdataInfo extends BaseEntity {
 
     public String getFileName() {
         return FileName;
+    }
+
+    public void setFullPath(String fullPath) {
+        this.fullPath = fullPath;
+    }
+
+    public String getFullPath() {
+        return fullPath;
     }
 }

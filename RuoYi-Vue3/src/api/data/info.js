@@ -7,37 +7,75 @@ export function listInfo(query) {
     params: query
   })
 }
+export function getExperimentTree(query) {
+  return request({
+    url: '/data/info/tree',
+    method: 'get',
+    params: query
+})   
+}
 
-export function getInfo(id, type) {
+export function getInfo(id, type, config = {}) {
   return request({
     url: id ? '/data/info/' + id : '/data/info/',
     method: 'get',
-    params: { type }
+    params: { type },
+    ...config
   })
 }
 
-export function addInfo(data) {
+export function addProjectInfo(data, config = {}) {
   return request({
-    url: '/data/info',
+    url: '/data/info/project',
     method: 'post',
-    data
+    data,
+    ...config
   })
 }
 
-export function updateInfo(id, type, data) {
+export function addExperimentInfo(data, config = {}) {
+  const requestConfig = {
+    url: '/data/info/experiment',
+    method: 'post',
+    data,
+    timeout: config.timeout ?? 6 * 60 * 60 * 1000,
+    ...config
+  }
+
+  if (data instanceof FormData) {
+    requestConfig.headers = {
+      'Content-Type': 'multipart/form-data',
+      repeatSubmit: false,
+      ...(config.headers || {})
+    }
+  }
+
+  return request(requestConfig)
+}
+
+export function addInfo(data, config = {}) {
+  if (data?.type === 'experiment') {
+    return addExperimentInfo(data, config)
+  }
+  return addProjectInfo(data, config)
+}
+
+export function updateInfo(id, type, data, config = {}) {
   return request({
     url: '/data/info/' + id,
     method: 'put',
     params: { type },
-    data
+    data,
+    ...config
   })
 }
 
-export function delInfo(id, type) {
+export function delInfo(id, type, config = {}) {
   return request({
     url: '/data/info/' + id,
     method: 'delete',
-    params: { type }
+    params: { type },
+    ...config
   })
 }
 

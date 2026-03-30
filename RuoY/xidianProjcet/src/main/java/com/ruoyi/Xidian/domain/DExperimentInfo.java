@@ -47,6 +47,9 @@ public class DExperimentInfo extends BaseEntity
     private String location;
 
     private String path;
+
+    /** 试验完整路径 */
+    private String fullPath;
     /** 平台配置信息 */
     private String platformConfig;
 
@@ -202,6 +205,15 @@ public class DExperimentInfo extends BaseEntity
     public String getTargetType()
     {
         return targetType;
+    }
+    public void setFullPath(String fullPath)
+    {
+        this.fullPath = fullPath;
+    }
+
+    public String getFullPath()
+    {
+        return fullPath;
     }
 
     @Override

@@ -30,6 +30,9 @@ public class DProjectInfo extends TreeEntity
     @Excel(name = "文件夹路径")
     private String path;
 
+    /** 项目完整路径 */
+    private String fullPath;
+
     private String type;
 
     public void setProjectId(Long projectId) 
@@ -73,6 +76,15 @@ public class DProjectInfo extends TreeEntity
     }
     public String getType(){
         return type;
+    }
+    public void setFullPath(String fullPath)
+    {
+        this.fullPath = fullPath;
+    }
+
+    public String getFullPath()
+    {
+        return fullPath;
     }
 
     @Override

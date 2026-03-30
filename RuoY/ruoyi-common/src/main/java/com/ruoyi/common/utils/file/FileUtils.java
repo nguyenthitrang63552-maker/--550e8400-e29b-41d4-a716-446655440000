@@ -1,5 +1,7 @@
 package com.ruoyi.common.utils.file;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,12 +22,16 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.exception.ServiceException;
@@ -41,6 +47,7 @@ import com.ruoyi.common.utils.uuid.IdUtils;
 public class FileUtils
 {
     public static String FILENAME_PATTERN = "[a-zA-Z0-9_\\-\\|\\.\\u4e00-\\u9fa5]+";
+    private static final long JSON_PRETTY_PREVIEW_MAX_SIZE = 2L * 1024 * 1024;
 
     /**
      * 输出指定文件的byte数组
@@ -394,6 +401,58 @@ public class FileUtils
         }
     }
 
+    public static Map<String, Object> previewFileByPage(String filePath, int pageNum, int pageSize)
+    {
+        File file = new File(filePath);
+        if (!file.exists())
+        {
+            throw new ServiceException("File does not exist");
+        }
+
+        int safePageNum = pageNum <= 0 ? 1 : pageNum;
+        int safePageSize = pageSize <= 0 ? 200 : pageSize;
+        int startIndex = (safePageNum - 1) * safePageSize;
+        int endIndex = startIndex + safePageSize;
+
+        String lowerName = file.getName().toLowerCase();
+        if (lowerName.endsWith(".csv"))
+        {
+            return previewCsvByPage(file, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
+        if (lowerName.endsWith(".txt"))
+        {
+            return previewTxtByPage(file, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
+        if (lowerName.endsWith(".json"))
+        {
+            return previewJsonByPage(file, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
+        if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc"))
+        {
+            return previewWordByPage(file, lowerName, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
+        if (lowerName.endsWith(".pdf"))
+        {
+            return buildUnsupportedPreviewResult("PDF 文件请使用在线 PDF 预览");
+        }
+
+        if (lowerName.endsWith(".bin") || lowerName.endsWith(".dat") || lowerName.endsWith(".raw"))
+        {
+            return buildUnsupportedPreviewResult("暂不支持预览二进制文件，请下载后查看");
+        }
+
+        if (lowerName.endsWith(".xls") || lowerName.endsWith(".xlsx"))
+        {
+            return previewExcelByPage(filePath, pageNum, pageSize);
+        }
+
+        return buildUnsupportedPreviewResult("暂不支持在线预览该文件");
+    }
+
     public static Map<String, Object> previewExcelByPage(String filePath, int pageNum, int pageSize)
     {
         File file = new File(filePath);
@@ -414,6 +473,11 @@ public class FileUtils
         }
 
         if (lowerName.endsWith(".txt"))
+        {
+            return previewTxtByPage(file, safePageNum, safePageSize, startIndex, endIndex);
+        }
+
+        if (lowerName.endsWith(".docx"))
         {
             return previewTxtByPage(file, safePageNum, safePageSize, startIndex, endIndex);
         }
@@ -464,6 +528,115 @@ public class FileUtils
         {
             throw new ServiceException("预览失败: " + e.getMessage());
         }
+    }
+
+    private static Map<String, Object> previewJsonByPage(File file, int pageNum, int pageSize, int startIndex, int endIndex)
+    {
+        if (file.length() > JSON_PRETTY_PREVIEW_MAX_SIZE)
+        {
+            return previewTxtByPage(file, pageNum, pageSize, startIndex, endIndex);
+        }
+
+        try (FileInputStream fis = new FileInputStream(file))
+        {
+            String jsonText = IOUtils.toString(fis, StandardCharsets.UTF_8);
+            String prettyJson = jsonText;
+            try
+            {
+                Object parsed = JSON.parse(jsonText);
+                prettyJson = JSON.toJSONString(parsed, JSONWriter.Feature.PrettyFormat);
+            }
+            catch (Exception ignored)
+            {
+                // Fall back to raw JSON text when parsing fails.
+            }
+            return previewTextContentByPage(prettyJson, pageNum, pageSize, startIndex, endIndex);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("Preview failed: " + e.getMessage());
+        }
+    }
+
+    private static Map<String, Object> previewWordByPage(
+            File file,
+            String lowerName,
+            int pageNum,
+            int pageSize,
+            int startIndex,
+            int endIndex)
+    {
+        try
+        {
+            String content = extractWordContent(file, lowerName);
+            return previewTextContentByPage(content, pageNum, pageSize, startIndex, endIndex);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("Preview failed: " + e.getMessage());
+        }
+    }
+
+    private static String extractWordContent(File file, String lowerName) throws IOException
+    {
+        if (lowerName.endsWith(".docx"))
+        {
+            try (FileInputStream fis = new FileInputStream(file);
+                 XWPFDocument document = new XWPFDocument(fis);
+                 XWPFWordExtractor extractor = new XWPFWordExtractor(document))
+            {
+                String text = extractor.getText();
+                return text == null ? "" : text;
+            }
+        }
+
+        try (FileInputStream fis = new FileInputStream(file);
+             HWPFDocument document = new HWPFDocument(fis);
+             WordExtractor extractor = new WordExtractor(document))
+        {
+            String text = extractor.getText();
+            return text == null ? "" : text;
+        }
+    }
+
+    private static Map<String, Object> previewTextContentByPage(
+            String content,
+            int pageNum,
+            int pageSize,
+            int startIndex,
+            int endIndex)
+    {
+        String normalized = content == null ? "" : content.replace("\r\n", "\n").replace('\r', '\n');
+        String[] rawLines = normalized.split("\n", -1);
+        List<String> lines = new ArrayList<>();
+        for (String rawLine : rawLines)
+        {
+            lines.add(rawLine == null ? "" : rawLine);
+        }
+        if (lines.size() == 1 && StringUtils.isEmpty(lines.get(0)))
+        {
+            lines.clear();
+        }
+
+        List<String> pageLines = new ArrayList<>();
+        int totalRows = lines.size();
+        for (int index = startIndex; index < Math.min(endIndex, totalRows); index++)
+        {
+            pageLines.add(lines.get(index));
+        }
+        return buildPreviewTxtPageResult(pageLines, totalRows, pageNum, pageSize);
+    }
+
+    private static Map<String, Object> buildUnsupportedPreviewResult(String message)
+    {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("previewType", "unsupported");
+        result.put("message", message);
+        result.put("rows", new ArrayList<>());
+        result.put("total", 0);
+        result.put("pageNum", 1);
+        result.put("pageSize", 0);
+        return result;
     }
 
     private static List<Map<String, Object>> previewCsv(File file)
@@ -566,6 +739,7 @@ public class FileUtils
 
     private static Map<String,Object> buildPreviewTxtPageResult(List<String> lines, int total, int pageNum, int pageSize){
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("previewType", "text");
         result.put("rows", lines);
         result.put("total", total);
         result.put("pageNum", pageNum);
@@ -576,6 +750,7 @@ public class FileUtils
     private static Map<String, Object> buildPreviewPageResult(List<Map<String, Object>> rows, int total, int pageNum, int pageSize)
     {
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("previewType", "table");
         result.put("rows", rows);
         result.put("total", total);
         result.put("pageNum", pageNum);

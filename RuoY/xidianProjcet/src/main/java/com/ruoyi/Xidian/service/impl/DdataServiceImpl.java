@@ -22,23 +22,34 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
 public class DdataServiceImpl implements IDdataService
 {
     private static final Logger log = LoggerFactory.getLogger(DdataServiceImpl.class);
+    private static final Set<String> EXPERIMENT_ALLOWED_EXTENSIONS = new HashSet<>(
+            Arrays.asList("zip", "csv", "xls", "xlsx", "txt", "json", "doc", "docx", "pdf", "bin", "dat", "raw")
+    );
 
     @Autowired
     private DdataMapper ddataMapper;
@@ -67,6 +78,244 @@ public class DdataServiceImpl implements IDdataService
         return ddataMapper.selectDdataInfoList(ddataInfo);
     }
 
+    private void uploadZipArchive(MultipartFile file, DExperimentInfo experimentInfo, String archivePath)
+    {
+        boolean hasUploadedEntry = false;
+        String archiveParentPath = extractDirectory(archivePath);
+
+        try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream()))
+        {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null)
+            {
+                if (entry.isDirectory())
+                {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryPath = buildArchiveEntryPath(archiveParentPath, entry.getName());
+                if (shouldSkipExperimentPath(entryPath))
+                {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String extension = extractExtensionName(entryPath);
+                assertExperimentExtension(extension, entryPath);
+                storeExperimentFile(experimentInfo, entryPath, zipInputStream);
+                hasUploadedEntry = true;
+                zipInputStream.closeEntry();
+            }
+        }
+        catch (IOException e)
+        {
+            throw new ServiceException("解存失败: " + e.getMessage());
+        }
+
+        if (!hasUploadedEntry)
+        {
+            throw new ServiceException("没有可上传的文件");
+        }
+    }
+
+    private void storeExperimentFile(DExperimentInfo experimentInfo, String relativePath, InputStream inputStream)
+            throws IOException
+    {
+        DProjectInfo projectInfo = requireProject(experimentInfo.getProjectId());
+        String normalizedPath = normalizeExperimentUploadPath(relativePath);
+        Path projectRoot = buildProjectRootPath(projectInfo);
+        Path experimentRoot = buildExperimentRootPath(projectInfo, experimentInfo);
+        String storagePath = buildUniqueExperimentStoragePath(experimentRoot, normalizedPath);
+        Path targetPath = resolveAbsoluteDataPath(experimentRoot, storagePath);
+
+        try (PathLockManager.LockHandle ignored = pathLockManager.lock(
+                buildLockPaths(projectRoot, experimentRoot),
+                buildLockPaths(targetPath)))
+        {
+            Path parentPath = targetPath.getParent();
+            if (parentPath != null && Files.notExists(parentPath))
+            {
+                Files.createDirectories(parentPath);
+            }
+
+            Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            DdataInfo ddataInfo = buildExperimentUploadDataInfo(experimentInfo, normalizedPath, storagePath);
+            ddataMapper.insertDdataInfo(ddataInfo);
+        }
+    }
+
+    private DdataInfo buildExperimentUploadDataInfo(
+            DExperimentInfo experimentInfo,
+            String relativePath,
+            String storagePath)
+    {
+        DdataInfo ddataInfo = new DdataInfo();
+        ddataInfo.setExperimentId(experimentInfo.getExperimentId());
+        ddataInfo.setTargetId(experimentInfo.getTargetId());
+        ddataInfo.setTargetType(resolveExperimentTargetType(experimentInfo));
+        ddataInfo.setDataName(extractFileName(relativePath));
+        ddataInfo.setDataType(resolveExperimentDataType(relativePath));
+        ddataInfo.setDataFilePath(normalizeDataFilePath(storagePath));
+        ddataInfo.setIsSimulation(Boolean.TRUE);
+        ddataInfo.setSampleFrequency(1000);
+        ddataInfo.setDeviceId(null);
+        ddataInfo.setDeviceInfo(null);
+        ddataInfo.setWorkStatus("completed");
+        ddataInfo.setCreateBy(SecurityUtils.getUsername());
+
+        return ddataInfo;
+    }
+
+    private String buildUniqueExperimentStoragePath(Path experimentRoot, String relativePath)
+    {
+        String normalizedPath = normalizeDataFilePath(relativePath);
+        String directory = extractDirectory(normalizedPath);
+        String baseName = extractBaseName(normalizedPath);
+        String suffix = extractSuffix(normalizedPath);
+
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            String storagePath = buildDataFilePath(
+                    directory,
+                    baseName + "_" + UUID.randomUUID().toString().replace("-", ""),
+                    suffix);
+            if (Files.notExists(resolveAbsoluteDataPath(experimentRoot, storagePath)))
+            {
+                return storagePath;
+            }
+        }
+
+        throw new ServiceException("无法生成唯一的文件名");
+    }
+
+    private String resolveExperimentTargetType(DExperimentInfo experimentInfo)
+    {
+        if (experimentInfo == null || StringUtils.isEmpty(experimentInfo.getTargetId()))
+        {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(experimentInfo.getTargetType()))
+        {
+            return experimentInfo.getTargetType();
+        }
+        if (dTargetInfoMapper.selectDTargetInfoByTargetId(experimentInfo.getTargetId()) == null)
+        {
+            return null;
+        }
+        return dTargetInfoMapper.selectDTargetInfoByTargetId(experimentInfo.getTargetId()).getTargetType();
+    }
+
+    private String resolveExperimentDataType(String relativePath)
+    {
+        String extension = extractExtensionName(relativePath);
+        return StringUtils.isEmpty(extension) ? "file" : extension;
+    }
+
+    private String extractFileName(String relativePath)
+    {
+        String normalizedPath = normalizeDataFilePath(relativePath);
+        return normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1);
+    }
+
+    private void assertExperimentExtension(String extension, String relativePath)
+    {
+        if (StringUtils.isEmpty(extension) || !EXPERIMENT_ALLOWED_EXTENSIONS.contains(extension))
+        {
+            throw new ServiceException("文件扩展名错误: " + extension + " " + relativePath);
+        }
+    }
+
+    private String extractExtensionName(String path)
+    {
+        String suffix = extractSuffix(path);
+        return StringUtils.isEmpty(suffix) ? "" : suffix.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    private String buildArchiveEntryPath(String archiveParentPath, String entryName)
+    {
+        String normalizedEntryPath = normalizeExperimentUploadPath(entryName);
+        if ("/".equals(archiveParentPath))
+        {
+            return normalizedEntryPath;
+        }
+        return normalizeExperimentUploadPath(
+                archiveParentPath + "/" + StringUtils.removeStart(normalizedEntryPath, "/"));
+    }
+
+    private boolean shouldSkipExperimentPath(String relativePath)
+    {
+        String normalizedPath = StringUtils.removeStart(normalizeDataFilePath(relativePath), "/");
+        String[] segments = normalizedPath.split("/");
+        for (String segment : segments)
+        {
+            String current = segment == null ? "" : segment.trim();
+            if (current.isEmpty())
+            {
+                continue;
+            }
+            if ("__MACOSX".equalsIgnoreCase(current) || ".DS_Store".equalsIgnoreCase(current)
+                    || "Thumbs.db".equalsIgnoreCase(current) || current.startsWith("._"))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeExperimentUploadPath(String rawPath)
+    {
+        if (StringUtils.isEmpty(rawPath))
+        {
+            throw new ServiceException("上传路径不能为空");
+        }
+
+        String candidate = rawPath.trim();
+        if (candidate.matches("^[a-zA-Z]:[\\\\/].*"))
+        {
+            int separatorIndex = Math.max(candidate.lastIndexOf('/'), candidate.lastIndexOf('\\'));
+            candidate = separatorIndex >= 0 ? candidate.substring(separatorIndex + 1) : candidate;
+        }
+
+        candidate = candidate.replace("\\", "/");
+        while (candidate.startsWith("/"))
+        {
+            candidate = candidate.substring(1);
+        }
+
+        List<String> parts = new ArrayList<>();
+        for (String segment : candidate.split("/"))
+        {
+            String current = segment == null ? "" : segment.trim();
+            if (current.isEmpty() || ".".equals(current))
+            {
+                continue;
+            }
+            if ("..".equals(current))
+            {
+                throw new ServiceException("上传路径不能包含 .. 段落");
+            }
+            if (containsIllegalWindowsChar(current))
+            {
+                throw new ServiceException("上传路径包含非法字符: " + current);
+            }
+            parts.add(current);
+        }
+
+        if (parts.isEmpty())
+        {
+            throw new ServiceException("上传路径不能为空");
+        }
+        return "/" + String.join("/", parts);
+    }
+
+    private boolean containsIllegalWindowsChar(String name)
+    {
+        return name.contains(":") || name.contains("*") || name.contains("?") || name.contains("\"")
+                || name.contains("<") || name.contains(">") || name.contains("|");
+    }
+
     @Override
     public DdataInfo selectDdataInfoByDdataId(Integer id)
     {
@@ -86,6 +335,7 @@ public class DdataServiceImpl implements IDdataService
         }
 
         DdataInfo result = records.get(0);
+        result.setFullPath("./data" + BuildDataFilePath(result) + result.getDataFilePath());
         redisCache.setCacheObject(cacheKey, result);
         return result;
     }
@@ -164,6 +414,47 @@ public class DdataServiceImpl implements IDdataService
         catch (IOException e)
         {
             throw new ServiceException("文件上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void uploadFiles(List<MultipartFile> files, String experimentId)
+    {
+        if (files == null || files.isEmpty())
+        {
+            return;
+        }
+
+        DExperimentInfo experimentInfo = requireExperiment(experimentId);
+        for (MultipartFile file : files)
+        {
+            if (file == null)
+            {
+                continue;
+            }
+
+            String uploadPath = normalizeExperimentUploadPath(file.getOriginalFilename());
+            if (shouldSkipExperimentPath(uploadPath))
+            {
+                continue;
+            }
+
+            String extension = extractExtensionName(uploadPath);
+            if ("zip".equals(extension))
+            {
+                uploadZipArchive(file, experimentInfo, uploadPath);
+                continue;
+            }
+
+            assertExperimentExtension(extension, uploadPath);
+            try (InputStream inputStream = file.getInputStream())
+            {
+                storeExperimentFile(experimentInfo, uploadPath, inputStream);
+            }
+            catch (IOException e)
+            {
+                throw new ServiceException("文件上传失败: " + e.getMessage());
+            }
         }
     }
 
