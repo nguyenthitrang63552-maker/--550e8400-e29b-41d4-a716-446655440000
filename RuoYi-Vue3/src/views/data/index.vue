@@ -1,13 +1,27 @@
 ﻿<template>
-    <div class="app-container">
-        <splitpanes :horizontal="appStore.device === 'mobile'" class="default-theme">
-            <!-- 左侧菜单栏 试验信息树形表 -->
-            <pane size="16">
-                <el-col>
-                    <div class="head-container">
-                        <el-input v-model="name" placeholder="请输入试验名称" clearable prefix-icon="Search" style="margin-bottom: 20px"></el-input>
+    <div class="app-container data-workspace-page">
+        <transition name="tree-float-panel">
+            <aside v-show="treePanelOpen" class="tree-float-panel" :style="treePanelStyle" @click.stop>
+                <div class="workspace-sidebar-shell workspace-sidebar-shell--floating">
+                    <div class="workspace-sidebar__hero">
+                        <div class="workspace-sidebar__hero-top">
+                            <div class="workspace-sidebar__headline">
+                                <p class="workspace-sidebar__eyebrow">资源导航</p>
+                                <h3 class="workspace-sidebar__title">项目与试验树</h3>
+                                <p class="workspace-sidebar__description">需要切换数据范围时再展开这里，选择节点后会自动回到主数据视图。</p>
+                            </div>
+                            <el-button class="tree-float-close" circle @click="treePanelOpen = false">
+                                <el-icon><CloseIcon /></el-icon>
+                            </el-button>
+                        </div>
+                        <div class="workspace-sidebar__hero-bottom">
+                            <el-button class="workspace-sidebar__reset-btn" link @click="resetTreeScope">查看全部数据</el-button>
+                        </div>
                     </div>
-                    <div class="body-container">
+                    <div class="head-container workspace-sidebar__search">
+                        <el-input v-model="name" placeholder="搜索项目或试验名称" clearable prefix-icon="Search" class="workspace-tree-search"></el-input>
+                    </div>
+                    <div class="body-container workspace-sidebar__tree">
                         <el-tree
                             :data="treeTableOptions"
                             :props="{ label: 'label', children: 'children' }"
@@ -52,12 +66,47 @@
                             </template>
                         </el-tree>
                     </div>
-                </el-col>
-            </pane>
-            <!-- 右侧内容栏 试验信息列表 -->
-            <pane>
-                <div class="pane-content">
+                </div>
+            </aside>
+        </transition>
+        <transition name="tree-float-backdrop">
+            <div v-show="treePanelOpen" class="tree-float-backdrop" @click="treePanelOpen = false"></div>
+        </transition>
+
+        <button
+            ref="treeFabRef"
+            type="button"
+            :class="['tree-fab', { 'is-open': treePanelOpen, 'is-dragging': treeFabDragging }]"
+            :style="treeFabStyle"
+            :title="treePanelOpen ? '收起项目与试验树' : '打开项目与试验树'"
+            @pointerdown="handleTreeFabPointerDown"
+            @click="handleTreeFabClick"
+        >
+            <span class="tree-fab__icon-shell">
+                <el-icon class="tree-fab__icon"><ElIconFolder /></el-icon>
+            </span>
+            <span class="tree-fab__content">
+                <span class="tree-fab__label">项目与试验树</span>
+                <span class="tree-fab__hint">{{ treeScopeShortLabel }}</span>
+            </span>
+            <span class="tree-fab__badge">{{ treeExperimentCount }}</span>
+        </button>
+
+        <div class="pane-content data-pane data-pane--full">
                     <div v-show="showSearch" class="query-section">
+                        <div class="query-section__header">
+                            <div>
+                                <p class="query-section__eyebrow">条件检索</p>
+                                <h4 class="query-section__title">精确筛选你要管理的数据</h4>
+                            </div>
+                            <div class="query-section__summary">
+                                <span class="query-summary-chip query-summary-chip--scope" :title="treeScopeLabel">{{ treeScopeLabel }}</span>
+                                <span class="query-summary-chip">筛选 {{ activeFilterCount }} 项</span>
+                                <span class="query-summary-chip">总结果 {{ total }}</span>
+                                <span class="query-summary-chip query-summary-chip--soft">当前页 {{ businessList.length }} 条</span>
+                                <span class="query-summary-chip query-summary-chip--soft">{{ dateRangeText }}</span>
+                            </div>
+                        </div>
                         <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="88px" class="query-form">
                             <el-form-item label="ID" prop="id">
                                 <el-input v-model="queryParams.id" placeholder="请输入数据ID" clearable class="query-control" @keyup.enter="handleQuery" />
@@ -108,8 +157,19 @@
 
                     <div v-show="showSearch" class="toolbar-divider"></div>
 
-                    <el-row :gutter="10" class="mb8 global-actions-row">
-                        <el-col :span="1.5">
+                    <section class="action-surface">
+                        <div class="action-surface__header">
+                            <div>
+                                <p class="action-surface__eyebrow">Quick Actions</p>
+                                <h4 class="action-surface__title">新增、导入与批量维护</h4>
+                            </div>
+                            <div class="action-surface__meta">
+                                <span class="action-surface__pill">已选 {{ selectedCount }} 项</span>
+                                <span class="action-surface__pill action-surface__pill--muted">试验 {{ treeExperimentCount }} 个</span>
+                                <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+                            </div>
+                        </div>
+                        <div class="global-actions-row">
                             <el-button
                               class="toolbar-action-btn toolbar-action-btn--project"
                               type="primary"
@@ -119,8 +179,6 @@
                             >
                               新增项目
                             </el-button>
-                        </el-col>
-                        <el-col :span="1.5">
                             <el-button
                               class="toolbar-action-btn toolbar-action-btn--experiment"
                               type="primary"
@@ -130,8 +188,6 @@
                             >
                               新增试验
                             </el-button>
-                        </el-col>
-                        <el-col :span="1.5">
                             <el-button
                               class="toolbar-action-btn toolbar-action-btn--import"
                               type="primary"
@@ -141,9 +197,6 @@
                             >
                               数据导入
                             </el-button>
-
-                        </el-col>
-                        <el-col :span="1.5">
                             <el-button
                               class="toolbar-action-btn toolbar-action-btn--export"
                               type="primary"
@@ -153,69 +206,85 @@
                             >
                               导出
                             </el-button>
-
-                        </el-col>
-                        <el-col :span="1.5">
                             <el-button
-                            class="toolbar-action-btn toolbar-action-btn--delete"
-                            type="danger"
-                            icon="Delete"
-                            :disabled="multiple"
-                            @click="handleDelete()"
-                            v-hasPermi="['dataInfo:info:delete']"
-                            >删除</el-button>
-                        </el-col>
-                        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-                    </el-row>
+                              class="toolbar-action-btn toolbar-action-btn--delete"
+                              type="danger"
+                              icon="Delete"
+                              :disabled="multiple"
+                              @click="handleDelete()"
+                              v-hasPermi="['dataInfo:info:delete']"
+                            >
+                              删除
+                            </el-button>
+                        </div>
+                    </section>
 
-                    <el-table v-loading="loading" :data="businessList" @selection-change="handleSelectionChange">
-                        <el-table-column type="selection" width="55" align="center" />
-                        <el-table-column label="ID" align="center" prop="id" />
-                        <el-table-column label="数据名称" align="center" prop="dataName" :show-overflow-tooltip="true" />
-                        <el-table-column label="是否模拟" align="center" prop="isSimulation" >
-                            <template #default="scope">
-                                <span v-if="scope.row.isSimulation === true">真实数据</span>
-                                <span v-else-if="scope.row.isSimulation === false">模拟数据</span>
-                                <span v-else>未知类型</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="所属试验" align="center" prop="experimentName" :show-overflow-tooltip="true" />
-                        <el-table-column label="所属项目" align="center" prop="projectName" :show-overflow-tooltip="true" />
-                        <el-table-column label="试验目标" align="center" prop="targetType" :show-overflow-tooltip="true" />
-                        <el-table-column label="试验时间" align="center" prop="startTime" >
-                            <template #default="scope">
-                                <span>{{ parseTime(scope.row.startTime) }}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="试验地点" align="center" prop="location" :show-overflow-tooltip="true" />
-                        <el-table-column label="试验描述" align="center" prop="contentDesc" :show-overflow-tooltip="true" />
-                        <el-table-column label="创建人" align="center" prop="createBy" />
-                        <el-table-column label="创建时间" align="center" prop="createTime" >
-                            <template #default="scope">
-                                <span>{{ parseTime(scope.row.createTime) }}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="数据种类" align="center" prop="dataType" :show-overflow-tooltip="true" />
-                        <el-table-column label="操作" align="center" class-name="small-padding fixed-width table-action-cell" width="132">
-                            <template #default="scope">
-                                <div class="table-action-group">
-                                    <el-tooltip content="详情" placement="top">
-                                        <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dataInfo:info:query']"></el-button>
-                                    </el-tooltip>
-                                    <el-tooltip content="修改" placement="top">
-                                        <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dataInfo:info:update']"></el-button>
-                                    </el-tooltip>
-                                    <el-tooltip content="删除" placement="top">
-                                        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dataInfo:info:delete']"></el-button>
-                                    </el-tooltip>
-                                </div>
-                            </template>
-                        </el-table-column>
-                    </el-table>
-                    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+                    <section class="table-surface">
+                        <div class="table-surface__header">
+                            <div>
+                                <p class="table-surface__eyebrow">Dataset View</p>
+                                <h4 class="table-surface__title">数据清单</h4>
+                            </div>
+                            <div class="table-surface__meta">
+                                <span class="table-meta-chip">总数 {{ total }}</span>
+                                <span class="table-meta-chip table-meta-chip--real">真实 {{ realDataCount }}</span>
+                                <span class="table-meta-chip table-meta-chip--simulation">模拟 {{ simulationDataCount }}</span>
+                            </div>
+                        </div>
+
+                        <el-table v-loading="loading" :data="businessList" class="data-table" empty-text="暂无符合条件的数据" @selection-change="handleSelectionChange">
+                            <el-table-column type="selection" width="55" align="center" />
+                            <el-table-column label="ID" align="center" prop="id" />
+                            <el-table-column label="数据名称" align="center" prop="dataName" :show-overflow-tooltip="true" />
+                            <el-table-column label="是否模拟" align="center" prop="isSimulation" >
+                                <template #default="scope">
+                                    <el-tag class="status-chip" effect="light" round :type="scope.row.isSimulation === true ? 'success' : scope.row.isSimulation === false ? 'warning' : 'info'">
+                                        <span v-if="scope.row.isSimulation === true">真实数据</span>
+                                        <span v-else-if="scope.row.isSimulation === false">模拟数据</span>
+                                        <span v-else>未知类型</span>
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="所属试验" align="center" prop="experimentName" :show-overflow-tooltip="true" />
+                            <el-table-column label="所属项目" align="center" prop="projectName" :show-overflow-tooltip="true" />
+                            <el-table-column label="试验目标" align="center" prop="targetType" :show-overflow-tooltip="true" />
+                            <el-table-column label="试验时间" align="center" prop="startTime" >
+                                <template #default="scope">
+                                    <span>{{ parseTime(scope.row.startTime) }}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="试验地点" align="center" prop="location" :show-overflow-tooltip="true" />
+                            <el-table-column label="试验描述" align="center" prop="contentDesc" :show-overflow-tooltip="true" />
+                            <el-table-column label="创建人" align="center" prop="createBy" />
+                            <el-table-column label="创建时间" align="center" prop="createTime" >
+                                <template #default="scope">
+                                    <span>{{ parseTime(scope.row.createTime) }}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="数据种类" align="center" prop="dataType" :show-overflow-tooltip="true">
+                                <template #default="scope">
+                                    <span class="data-type-pill">{{ scope.row.dataType || '--' }}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" align="center" class-name="small-padding fixed-width table-action-cell" width="132">
+                                <template #default="scope">
+                                    <div class="table-action-group">
+                                        <el-tooltip content="详情" placement="top">
+                                            <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dataInfo:info:query']"></el-button>
+                                        </el-tooltip>
+                                        <el-tooltip content="修改" placement="top">
+                                            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dataInfo:info:update']"></el-button>
+                                        </el-tooltip>
+                                        <el-tooltip content="删除" placement="top">
+                                            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dataInfo:info:delete']"></el-button>
+                                        </el-tooltip>
+                                    </div>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+                    </section>
                 </div>
-            </pane>
-        </splitpanes>
 
         <!-- 添加项目信息对话框 -->
         <el-dialog
@@ -1005,9 +1074,6 @@
     </div>
 </template>
 <script setup name="Business">
-import useAppStore from '@/store/modules/app'
-import {Splitpanes, Pane} from 'splitpanes'
-import 'splitpanes/dist/splitpanes.css'
 import {getdataList,getdataDetail,getMovePathTree,updatedata,deldata,adddata,previewData,downloadData} from '@/api/data/bussiness'
 import { getExperimentTree, addProjectInfo, addExperimentInfo, getInfo, updateInfo, delInfo } from "@/api/data/info"
 import { addDateRange, blobValidate } from "@/utils/ruoyi"
@@ -1029,7 +1095,6 @@ import { saveAs } from 'file-saver'
 const dateRange = ref([])
 const { proxy } = getCurrentInstance()
 const treeTableOptions = ref(undefined)
-const appStore = useAppStore()
 const projectOptions = ref([])
 const open = ref(false)
 const openView = ref(false)
@@ -1046,6 +1111,10 @@ const treeEditTitle = ref("")
 const projectInfoFormRef = ref(null)
 const experimentInfoFormRef = ref(null)
 const treeEditFormRef = ref(null)
+const treePanelOpen = ref(false)
+const treeFabRef = ref(null)
+const treeFabDragging = ref(false)
+const treeFabSuppressClick = ref(false)
 
 const name = ref('')
 const loading = ref(false)
@@ -1094,6 +1163,25 @@ const movePathNodeMap = ref({})
 const selectedMovePathNodeId = ref(null)
 const selectedMovePathNode = ref(null)
 const currentFileSuffix = ref('')
+const viewportSize = reactive({
+  width: 0,
+  height: 0
+})
+const treeFabPosition = reactive({
+  x: 24,
+  y: 138
+})
+const treeFabMetrics = reactive({
+  width: 170,
+  height: 68
+})
+const treeFabDragState = reactive({
+  active: false,
+  startX: 0,
+  startY: 0,
+  originX: 0,
+  originY: 0
+})
 
 const createInfoForm = () => ({
   id: null,
@@ -1239,6 +1327,7 @@ const data = reactive({
         experimentName: undefined,
         projectId: undefined,
         createBy: undefined,
+        isSimulation: undefined,
         dataType: undefined,
         startTime: undefined,
         endTime: undefined,
@@ -1861,6 +1950,109 @@ function handleMovePathChange(nodeId) {
 
 const moveTargetExperimentName = computed(() => selectedMovePathNode.value?.experimentName || '')
 const moveTargetProjectName = computed(() => selectedMovePathNode.value?.projectName || '')
+const treeStats = computed(() => {
+  const stats = {
+    projects: 0,
+    experiments: 0
+  }
+
+  const walk = (nodes = []) => {
+    nodes.forEach(node => {
+      if (node?.type === 'project') stats.projects += 1
+      if (node?.type === 'experiment') stats.experiments += 1
+      if (Array.isArray(node?.children) && node.children.length) {
+        walk(node.children)
+      }
+    })
+  }
+
+  walk(treeTableOptions.value || [])
+  return stats
+})
+const treeExperimentCount = computed(() => treeStats.value.experiments)
+const isCompactViewport = computed(() => viewportSize.width > 0 && viewportSize.width <= 768)
+const treeFabStyle = computed(() => ({
+  left: `${treeFabPosition.x}px`,
+  top: `${treeFabPosition.y}px`
+}))
+const treePanelStyle = computed(() => {
+  if (isCompactViewport.value) {
+    return undefined
+  }
+
+  const panelWidth = Math.min(360, Math.max(viewportSize.width - 32, 280))
+  const panelHeight = Math.max(viewportSize.height - 126, 320)
+  const gap = 16
+  const preferredRight = treeFabPosition.x + treeFabMetrics.width + gap
+  const preferredLeft = treeFabPosition.x - panelWidth - gap
+  let left = preferredRight
+
+  if (preferredRight + panelWidth > viewportSize.width - 16) {
+    left = preferredLeft
+  }
+
+  left = clampValue(left, 16, Math.max(16, viewportSize.width - panelWidth - 16))
+  const minTop = 94
+  const maxTop = Math.max(minTop, viewportSize.height - panelHeight - 24)
+  const top = clampValue(treeFabPosition.y - 8, minTop, maxTop)
+
+  return {
+    left: `${left}px`,
+    top: `${top}px`
+  }
+})
+const treeScopeLabel = computed(() => {
+  const params = queryParams.value || {}
+  const experimentName = typeof params.experimentName === 'string' ? params.experimentName.trim() : ''
+  if (experimentName) {
+    return `当前范围：试验 / ${experimentName}`
+  }
+
+  const projectId = params.projectId
+  if (projectId !== undefined && projectId !== null && projectId !== '') {
+    const project = projectOptions.value.find(item => String(item.projectId) === String(projectId))
+    const projectName = typeof project?.projectName === 'string' && project.projectName.trim() ? project.projectName.trim() : `项目 ${projectId}`
+    return `当前范围：项目 / ${projectName}`
+  }
+
+  return '当前范围：全部数据'
+})
+const treeScopeShortLabel = computed(() => {
+  const params = queryParams.value || {}
+  const experimentName = typeof params.experimentName === 'string' ? params.experimentName.trim() : ''
+  if (experimentName) {
+    return `试验 / ${experimentName}`
+  }
+
+  const projectId = params.projectId
+  if (projectId !== undefined && projectId !== null && projectId !== '') {
+    const project = projectOptions.value.find(item => String(item.projectId) === String(projectId))
+    const projectName = typeof project?.projectName === 'string' && project.projectName.trim() ? project.projectName.trim() : `项目 ${projectId}`
+    return `项目 / ${projectName}`
+  }
+
+  return '全部数据'
+})
+const selectedCount = computed(() => ids.value.length)
+const realDataCount = computed(() => businessList.value.filter(item => item?.isSimulation === true).length)
+const simulationDataCount = computed(() => businessList.value.filter(item => item?.isSimulation === false).length)
+const activeFilterCount = computed(() => {
+  const params = queryParams.value || {}
+  const filterKeys = ['id', 'dataName', 'experimentName', 'projectId', 'createBy', 'isSimulation', 'workStatus']
+  const count = filterKeys.reduce((totalCount, key) => {
+    const value = params[key]
+    if (value === true || value === false) return totalCount + 1
+    if (value !== undefined && value !== null && value !== '') return totalCount + 1
+    return totalCount
+  }, 0)
+  return count + (Array.isArray(dateRange.value) && dateRange.value.length === 2 ? 1 : 0)
+})
+const dateRangeText = computed(() => {
+  if (Array.isArray(dateRange.value) && dateRange.value.length === 2) {
+    return `${dateRange.value[0]} 至 ${dateRange.value[1]}`
+  }
+  return '未限制时间范围'
+})
 const detailDialogWidth = computed(() => detailDialogMinimized.value ? '460px' : 'min(1440px, calc(100vw - 16px))')
 const detailDialogTop = computed(() => detailDialogFullscreen.value ? '0' : '4vh')
 const detailPreviewContentHeight = computed(() => detailDialogFullscreen.value ? 'calc(100vh - 232px)' : '62vh')
@@ -2176,6 +2368,109 @@ function handleNodeClick(data) {
     }
 
     handleQuery()
+    treePanelOpen.value = false
+}
+
+function resetTreeScope() {
+    queryParams.value.id = undefined
+    queryParams.value.experimentName = undefined
+    queryParams.value.projectId = undefined
+    proxy.$refs["TreeRef"]?.setCurrentKey?.(null)
+    handleQuery()
+    treePanelOpen.value = false
+}
+
+function clampValue(value, min, max) {
+    return Math.min(Math.max(value, min), max)
+}
+
+function updateTreeFabMetrics() {
+    const fabEl = treeFabRef.value
+    if (!fabEl) return
+    treeFabMetrics.width = fabEl.offsetWidth || treeFabMetrics.width
+    treeFabMetrics.height = fabEl.offsetHeight || treeFabMetrics.height
+}
+
+function clampTreeFabPosition(nextX, nextY) {
+    const minX = 12
+    const minY = isCompactViewport.value ? 84 : 104
+    const maxX = Math.max(minX, viewportSize.width - treeFabMetrics.width - 12)
+    const maxY = Math.max(minY, viewportSize.height - treeFabMetrics.height - 16)
+    return {
+        x: clampValue(nextX, minX, maxX),
+        y: clampValue(nextY, minY, maxY)
+    }
+}
+
+function applyTreeFabPosition(nextX, nextY) {
+    const nextPosition = clampTreeFabPosition(nextX, nextY)
+    treeFabPosition.x = nextPosition.x
+    treeFabPosition.y = nextPosition.y
+}
+
+function syncTreeFabViewport() {
+    viewportSize.width = window.innerWidth
+    viewportSize.height = window.innerHeight
+    updateTreeFabMetrics()
+    applyTreeFabPosition(treeFabPosition.x, treeFabPosition.y)
+}
+
+function handleTreeViewportResize() {
+    syncTreeFabViewport()
+}
+
+function finishTreeFabDrag() {
+    treeFabDragState.active = false
+    window.removeEventListener('pointermove', handleTreeFabPointerMove)
+    window.removeEventListener('pointerup', handleTreeFabPointerUp)
+    window.removeEventListener('pointercancel', handleTreeFabPointerUp)
+}
+
+function handleTreeFabPointerDown(event) {
+    if (event.button !== undefined && event.button !== 0) return
+
+    treeFabDragState.active = true
+    treeFabDragState.startX = event.clientX
+    treeFabDragState.startY = event.clientY
+    treeFabDragState.originX = treeFabPosition.x
+    treeFabDragState.originY = treeFabPosition.y
+    treeFabDragging.value = false
+
+    window.addEventListener('pointermove', handleTreeFabPointerMove)
+    window.addEventListener('pointerup', handleTreeFabPointerUp)
+    window.addEventListener('pointercancel', handleTreeFabPointerUp)
+}
+
+function handleTreeFabPointerMove(event) {
+    if (!treeFabDragState.active) return
+
+    const deltaX = event.clientX - treeFabDragState.startX
+    const deltaY = event.clientY - treeFabDragState.startY
+    if (!treeFabDragging.value && Math.hypot(deltaX, deltaY) > 6) {
+        treeFabDragging.value = true
+    }
+
+    if (!treeFabDragging.value) return
+
+    event.preventDefault()
+    applyTreeFabPosition(treeFabDragState.originX + deltaX, treeFabDragState.originY + deltaY)
+}
+
+function handleTreeFabPointerUp() {
+    if (treeFabDragState.active && treeFabDragging.value) {
+        treeFabSuppressClick.value = true
+        window.setTimeout(() => {
+            treeFabSuppressClick.value = false
+        }, 120)
+    }
+
+    treeFabDragging.value = false
+    finishTreeFabDrag()
+}
+
+function handleTreeFabClick() {
+    if (treeFabSuppressClick.value) return
+    treePanelOpen.value = !treePanelOpen.value
 }
 
 function resetQuery() {
@@ -2189,6 +2484,7 @@ function resetQuery() {
         experimentName: undefined,
         projectId: undefined,
         createBy: undefined,
+        isSimulation: undefined,
         dataType: undefined,
         startTime: undefined,
         endTime: undefined,
@@ -2368,23 +2664,274 @@ onMounted(()=>{
     getList()
     getTreeData()
     getProjects()
+    nextTick(() => {
+        syncTreeFabViewport()
+    })
+    window.addEventListener('resize', handleTreeViewportResize)
+})
+
+onBeforeUnmount(() => {
+    finishTreeFabDrag()
+    window.removeEventListener('resize', handleTreeViewportResize)
 })
 
 </script>
 <style scoped>
-/* 禁用分割面板初始加载时的宽度过渡，使分割符打开时直接位于正确位置 */
-:deep(.splitpanes--vertical .splitpanes__pane) {
-  transition: none;
+.data-workspace-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: calc(100vh - 148px);
+  overflow: hidden;
+}
+
+.data-workspace-page::before,
+.data-workspace-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(8px);
+  opacity: 0.65;
+}
+
+.data-workspace-page::before {
+  top: -80px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(64, 94, 254, 0.18) 0%, rgba(64, 94, 254, 0) 72%);
+}
+
+.data-workspace-page::after {
+  left: -60px;
+  bottom: 140px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(14, 165, 233, 0) 72%);
+}
+
+.workspace-sidebar__eyebrow,
+.query-section__eyebrow,
+.action-surface__eyebrow,
+.table-surface__eyebrow {
+  margin: 0;
+  color: #405efe;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.workspace-sidebar__stats,
+.query-section__summary,
+.action-surface__meta,
+.table-surface__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sidebar-stat-pill,
+.query-summary-chip,
+.action-surface__pill,
+.table-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: rgba(255, 255, 255, 0.9);
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+}
+
+.workspace-sidebar-shell,
+.data-pane {
+  min-height: 0;
+}
+
+.workspace-sidebar-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.workspace-sidebar-shell--floating {
+  height: 100%;
+}
+
+.tree-float-panel {
+  position: fixed;
+  top: 94px;
+  left: 216px;
+  width: min(360px, calc(100vw - 32px));
+  height: calc(100vh - 126px);
+  z-index: 30;
+}
+
+.tree-float-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  background: rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(2px);
+}
+
+.tree-float-panel-enter-active,
+.tree-float-panel-leave-active,
+.tree-float-backdrop-enter-active,
+.tree-float-backdrop-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.tree-float-panel-enter-from,
+.tree-float-panel-leave-to {
+  opacity: 0;
+  transform: translateX(-18px) scale(0.98);
+}
+
+.tree-float-backdrop-enter-from,
+.tree-float-backdrop-leave-to {
+  opacity: 0;
+}
+
+.workspace-sidebar__hero,
+.action-surface,
+.table-surface {
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.workspace-sidebar__hero {
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(245, 248, 255, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.workspace-sidebar__hero-top,
+.workspace-sidebar__hero-bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-sidebar__hero-bottom {
+  align-items: center;
+  margin-top: 14px;
+}
+
+.workspace-sidebar__title,
+.query-section__title,
+.action-surface__title,
+.table-surface__title {
+  margin: 10px 0 0;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.workspace-sidebar__title {
+  font-size: 22px;
+}
+
+.query-section__title,
+.action-surface__title,
+.table-surface__title {
+  font-size: 18px;
+}
+
+.workspace-sidebar__description {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.workspace-sidebar__search {
+  margin: 0;
+}
+
+.workspace-tree-search :deep(.el-input__wrapper) {
+  min-height: 44px;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.85) inset;
+}
+
+.workspace-tree-search :deep(.el-input__wrapper.is-focus) {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(64, 94, 254, 0.42) inset, 0 0 0 4px rgba(64, 94, 254, 0.12);
+}
+
+.tree-float-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: none;
+  color: #475467;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.tree-float-close:hover,
+.tree-float-close:focus {
+  color: #0f172a;
+  background: #fff;
+}
+
+.workspace-sidebar__reset-btn {
+  padding: 0;
+  color: #405efe;
+  font-weight: 600;
+}
+
+.workspace-sidebar__tree {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 12px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  overflow: auto;
+}
+
+.body-container :deep(.el-tree) {
+  background: transparent;
 }
 
 .body-container :deep(.el-tree-node__content) {
-  height: 36px;
-  border-radius: 10px;
-  transition: background-color 0.2s ease;
+  height: 42px;
+  border-radius: 14px;
+  padding-right: 8px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .body-container :deep(.el-tree-node__content:hover) {
-  background: #f5f7fb;
+  background: #f4f7fd;
+  transform: translateX(2px);
+}
+
+.body-container :deep(.is-current > .el-tree-node__content) {
+  background: rgba(64, 94, 254, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(64, 94, 254, 0.18);
+}
+
+.body-container :deep(.is-current > .el-tree-node__content) .tree-node-content__label {
+  color: #2944db;
+  font-weight: 700;
 }
 
 .tree-node-content {
@@ -2402,7 +2949,9 @@ onMounted(()=>{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #1f2937;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .tree-node-content__action {
@@ -2461,11 +3010,166 @@ onMounted(()=>{
   font-size: 14px;
 }
 
+.pane-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.data-pane {
+  gap: 18px;
+}
+
+.data-pane--full {
+  width: 100%;
+  padding-bottom: 28px;
+}
+
+.tree-fab {
+  position: fixed;
+  top: 138px;
+  left: 190px;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 170px;
+  min-height: 68px;
+  padding: 12px 16px 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 22px;
+  cursor: pointer;
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(91, 124, 255, 0.98) 0%, rgba(64, 94, 254, 1) 100%);
+  box-shadow: 0 22px 36px rgba(64, 94, 254, 0.26), 0 8px 20px rgba(15, 23, 42, 0.1);
+  user-select: none;
+  touch-action: none;
+  cursor: grab;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease, background 0.22s ease;
+}
+
+.tree-fab:hover,
+.tree-fab:focus {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 26px 40px rgba(64, 94, 254, 0.3), 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.tree-fab.is-open {
+  background: linear-gradient(180deg, rgba(76, 108, 255, 0.99) 0%, rgba(47, 81, 236, 1) 100%);
+  box-shadow: 0 28px 42px rgba(64, 94, 254, 0.34), 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.tree-fab.is-dragging {
+  cursor: grabbing;
+  transition: none;
+  transform: none;
+  filter: none;
+}
+
+.tree-fab__icon-shell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.tree-fab__icon {
+  font-size: 22px;
+}
+
+.tree-fab__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.tree-fab__label {
+  display: block;
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tree-fab__hint {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-fab__badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 24px;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18);
+}
+
+.query-summary-chip--scope {
+  max-width: min(100%, 280px);
+  background: rgba(64, 94, 254, 0.08);
+  color: #405efe;
+  border-color: rgba(64, 94, 254, 0.16);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.query-summary-chip--soft,
+.action-surface__pill--muted {
+  background: rgba(248, 250, 252, 0.96);
+  color: #64748b;
+  border-color: rgba(226, 232, 240, 0.96);
+}
+
 .query-section {
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  padding: 14px 16px;
+  position: relative;
+  padding: 20px 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.query-section__header,
+.action-surface__header,
+.table-surface__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.query-form,
+.action-surface,
+.table-surface {
+  min-width: 0;
 }
 
 .query-form {
@@ -2473,6 +3177,7 @@ onMounted(()=>{
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px 16px;
+  margin-top: 18px;
 }
 
 .query-form :deep(.el-form-item) {
@@ -2488,6 +3193,22 @@ onMounted(()=>{
 
 .query-control {
   width: 100%;
+}
+
+.query-form :deep(.el-input__wrapper),
+.query-form :deep(.el-select__wrapper),
+.query-form :deep(.el-date-editor.el-input__wrapper) {
+  min-height: 42px;
+  border-radius: 14px;
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.82) inset;
+}
+
+.query-form :deep(.el-input__wrapper.is-focus),
+.query-form :deep(.el-select__wrapper.is-focused),
+.query-form :deep(.el-date-editor.el-input__wrapper.is-focus) {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(64, 94, 254, 0.42) inset, 0 0 0 4px rgba(64, 94, 254, 0.1);
 }
 
 .query-row-break {
@@ -2518,17 +3239,115 @@ onMounted(()=>{
 }
 
 .toolbar-divider {
-  margin: 20px 0;
+  margin: 2px 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(144, 147, 153, 0), rgba(144, 147, 153, 0.32), rgba(144, 147, 153, 0));
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0), rgba(203, 213, 225, 0.9), rgba(203, 213, 225, 0));
+}
+
+.action-surface,
+.table-surface {
+  padding: 20px 22px;
+}
+
+.action-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.action-surface__meta {
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .global-actions-row {
-  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
-.global-actions-row :deep(.right-toolbar) {
+.global-actions-row :deep(.right-toolbar),
+.action-surface__meta :deep(.right-toolbar) {
   margin-left: auto;
+}
+
+.action-surface__meta :deep(.right-toolbar .el-button) {
+  border-radius: 14px;
+}
+
+.table-surface {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 16px;
+}
+
+.table-surface__meta {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.table-meta-chip--real {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.16);
+  color: #047857;
+}
+
+.table-meta-chip--simulation {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.data-table {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.data-table :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
+.data-table :deep(th.el-table__cell) {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.data-table :deep(td.el-table__cell) {
+  color: #334155;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.data-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background: #f8fbff;
+}
+
+.status-chip {
+  font-weight: 600;
+}
+
+.data-type-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.96);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.table-surface :deep(.pagination-container) {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* 数据导入弹窗 - 压缩尺寸 */
@@ -2580,6 +3399,10 @@ onMounted(()=>{
 }
 
 @media (max-width: 1480px) {
+  .tree-float-panel {
+    width: min(340px, calc(100vw - 32px));
+  }
+
   .query-form :deep(.el-form-item) {
     flex-basis: calc(50% - 8px);
     width: calc(50% - 8px);
@@ -2601,12 +3424,96 @@ onMounted(()=>{
 }
 
 @media (max-width: 992px) {
+  .data-workspace-page::before,
+  .data-workspace-page::after {
+    display: none;
+  }
+
+  .tree-float-panel {
+    top: 82px;
+    left: 16px;
+    width: min(360px, calc(100vw - 24px));
+    height: calc(100vh - 102px);
+  }
+
+  .query-section__header,
+  .action-surface__header,
+  .table-surface__header {
+    flex-direction: column;
+  }
+
+  .action-surface__meta,
+  .table-surface__meta {
+    justify-content: flex-start;
+  }
+
   .query-form {
     gap: 12px;
+  }
+
+  .tree-fab {
+    top: 126px;
+    width: 156px;
+    min-height: 64px;
   }
 }
 
 @media (max-width: 768px) {
+  .workspace-sidebar-shell,
+  .query-section,
+  .action-surface,
+  .table-surface {
+    padding: 16px;
+  }
+
+  .tree-float-panel {
+    top: 72px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    height: calc(100vh - 88px);
+  }
+
+  .tree-fab {
+    top: 118px;
+    left: 12px;
+    width: 152px;
+    min-height: 62px;
+    padding: 11px 14px;
+    border-radius: 18px;
+  }
+
+  .tree-fab__icon-shell {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tree-fab__icon {
+    font-size: 20px;
+  }
+
+  .tree-fab__label {
+    font-size: 13px;
+  }
+
+  .tree-fab__badge {
+    top: -6px;
+    right: -6px;
+  }
+
+  .tree-float-backdrop {
+    background: rgba(15, 23, 42, 0.16);
+  }
+
+  .workspace-sidebar__hero-top,
+  .workspace-sidebar__hero-bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tree-float-close {
+    align-self: flex-end;
+  }
+
   .detail-drawer__header {
     padding: 16px 16px 12px;
   }

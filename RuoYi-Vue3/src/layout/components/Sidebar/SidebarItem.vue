@@ -3,7 +3,7 @@
     <template v-if="hasOneShowingChild(item.children, item) && (!onlyOneChild.children || onlyOneChild.noShowingChildren) && !item.alwaysShow">
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path, onlyOneChild.query)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{ 'submenu-title-noDropdown': !isNest }">
-          <svg-icon :icon-class="onlyOneChild.meta.icon || (item.meta && item.meta.icon)"/>
+          <svg-icon :icon-class="getMenuIcon(onlyOneChild, item)"/>
           <template #title><span class="menu-title" :title="hasTitle(onlyOneChild.meta.title)">{{ onlyOneChild.meta.title }}</span></template>
         </el-menu-item>
       </app-link>
@@ -11,7 +11,7 @@
 
     <el-sub-menu v-else ref="subMenu" :index="resolvePath(item.path)" teleported>
       <template v-if="item.meta" #title>
-        <svg-icon :icon-class="item.meta && item.meta.icon" />
+        <svg-icon :icon-class="getMenuIcon(item)" />
         <span class="menu-title" :title="hasTitle(item.meta.title)">{{ item.meta.title }}</span>
       </template>
 
@@ -49,6 +49,9 @@ const props = defineProps({
 })
 
 const onlyOneChild = ref({})
+const menuIconFallbackMap = {
+  data: 'tree-table'
+}
 
 function hasOneShowingChild(children = [], parent) {
   if (!children) {
@@ -96,5 +99,28 @@ function hasTitle(title){
   } else {
     return ""
   }
+}
+
+function getMenuIcon(route, parent) {
+  const routeIcon = route?.meta?.icon
+  const parentIcon = parent?.meta?.icon
+  if (routeIcon) return routeIcon
+  if (parentIcon) return parentIcon
+
+  const routePath = route?.path
+  const parentPath = parent?.path
+  const routeTitle = route?.meta?.title
+  const parentTitle = parent?.meta?.title
+
+  if (routePath && menuIconFallbackMap[routePath]) {
+    return menuIconFallbackMap[routePath]
+  }
+  if (parentPath && menuIconFallbackMap[parentPath]) {
+    return menuIconFallbackMap[parentPath]
+  }
+  if (routeTitle === '数据管理' || parentTitle === '数据管理') {
+    return 'tree-table'
+  }
+  return ''
 }
 </script>
