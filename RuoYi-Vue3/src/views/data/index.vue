@@ -2123,12 +2123,11 @@ const submitUpload = async () => {
             // 调用修改后的API，同时传递数据和文件
             await adddata(businessData, file.raw)
         }
-        
         ElMessage.success('数据导入成功')
         importVisible.value = false
         await getList() // 自动查询业务数据列表
     } catch (err) {
-        ElMessage.error('导入失败: ' + (err.message || '未知错误'))
+        console.error('导入失败: ' + (err.message || '未知错误'))
     }
   })
 }
@@ -2316,7 +2315,7 @@ function submitForm() {
       open.value = false
       getList()
     }).catch(error => {
-      ElMessage.error('修改失败: ' + (error.message || '未知错误'))
+      console.error('修改失败: ' + (error.message || '未知错误'))
     })
   })
 }
