@@ -162,8 +162,6 @@ public class TaskListener {
         taskToPy.setSample_rate_hz(requireValue(taskDataGroup.getFrequencyHz(), "sample rate"));
         taskToPy.setNum(requireValue(taskDataGroup.getTargetNum(), "target count"));
         taskToPy.setHost_trajectory_type(resolveHostTrajectoryType(task.getMotionModel()));
-        taskToPy.setOutput_directory(resolveOutputDirectory(task, taskDataGroup));
-        taskToPy.setRandomSeeds(resolveRandomSeeds(taskDataGroup));
         return taskToPy;
     }
 

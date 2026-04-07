@@ -46,20 +46,6 @@ public class TaskToPy implements Serializable {
     @JsonProperty("host_trajectory_type")
     private String host_trajectory_type;
 
-    @JsonProperty("output_directory")
-    private String output_directory;
-
-    @JsonProperty("random_seeds")
-    private RandomSeeds random_seeds;
-
-    public RandomSeeds getRandomSeeds() {
-        return random_seeds;
-    }
-
-    public void setRandomSeeds(RandomSeeds random_seeds) {
-        this.random_seeds = random_seeds;
-    }
-
     public String getRequest_id() {
         return request_id;
     }
@@ -122,14 +108,6 @@ public class TaskToPy implements Serializable {
 
     public void setHost_trajectory_type(String host_trajectory_type) {
         this.host_trajectory_type = host_trajectory_type;
-    }
-
-    public String getOutput_directory() {
-        return output_directory;
-    }
-
-    public void setOutput_directory(String output_directory) {
-        this.output_directory = output_directory;
     }
 
     public Date getFlight_start_datetime() {

@@ -144,6 +144,15 @@ public class DdataServiceImpl implements IDdataService
             Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             DdataInfo ddataInfo = buildExperimentUploadDataInfo(experimentInfo, normalizedPath, storagePath);
+            DdataInfo oldInfo = ddataMapper.selectSameNameFile(experimentInfo.getExperimentId(), storagePath);
+            if (oldInfo != null)
+            {
+                mergeExistingSimulationDataInfo(ddataInfo, oldInfo);
+                redisCache.deleteObject(CacheConstants.DATA_INFO_KEY + oldInfo.getId());
+                ddataMapper.updateDdataInfo(ddataInfo);
+                return;
+            }
+
             ddataMapper.insertDdataInfo(ddataInfo);
         }
     }
@@ -172,24 +181,7 @@ public class DdataServiceImpl implements IDdataService
 
     private String buildUniqueExperimentStoragePath(Path experimentRoot, String relativePath)
     {
-        String normalizedPath = normalizeDataFilePath(relativePath);
-        String directory = extractDirectory(normalizedPath);
-        String baseName = extractBaseName(normalizedPath);
-        String suffix = extractSuffix(normalizedPath);
-
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            String storagePath = buildDataFilePath(
-                    directory,
-                    baseName + "_" + UUID.randomUUID().toString().replace("-", ""),
-                    suffix);
-            if (Files.notExists(resolveAbsoluteDataPath(experimentRoot, storagePath)))
-            {
-                return storagePath;
-            }
-        }
-
-        throw new ServiceException("无法生成唯一的文件名");
+        return normalizeDataFilePath(relativePath);
     }
 
     private String resolveExperimentTargetType(DExperimentInfo experimentInfo)

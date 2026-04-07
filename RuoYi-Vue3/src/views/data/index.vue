@@ -680,6 +680,7 @@
                                 <el-option label="被动探测元数据" value="被动探测元数据"/>
                                 <el-option label="雷达系统航迹元数据" value="雷达系统航迹元数据"/>
                                 <el-option label="目标牵引询问元数据" value="目标牵引询问元数据"/>
+                                <el-option label="其他元数据" value="其他元数据"/>
                             </el-select>
                         </el-form-item>
                     </el-col>
@@ -691,13 +692,13 @@
                 </el-row>
                 <el-row v-if="title === '修改数据'">
                     <el-col :span="24">
-                        <el-form-item label="目标目录">
+                        <el-form-item label="修改目录">
                             <el-tree-select
                                 v-model="selectedMovePathNodeId"
                                 :data="movePathTreeOptions"
                                 :props="{ label: 'label', children: 'children', disabled: 'disabled' }"
                                 value-key="id"
-                                placeholder="请选择目标的文件目录"
+                                placeholder="请选择修改的目标文件目录"
                                 check-strictly
                                 clearable
                                 filterable

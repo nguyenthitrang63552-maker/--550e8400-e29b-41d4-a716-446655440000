@@ -183,92 +183,62 @@
                   />
                 </el-select>
               </div>
-              <div class="field-item">
+              <div class="field-item field-item--stack coordinate-field">
                 <span class="field-label">起点坐标：</span>
                 <div class="triple-inputs coordinate-inputs coordinate-inputs--start">
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Lon</span>
-                    <el-input-number
-                      v-model="simulationForm.startCoordinate.lon"
-                      :controls="false"
-                      :precision="6"
-                      :min="-180"
-                      :max="180"
-                      placeholder="Lon"
-                    />
-                    <span class="coordinate-unit">deg</span>
-                  </div>
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Lat</span>
-                    <el-input-number
-                      v-model="simulationForm.startCoordinate.lat"
-                      :controls="false"
-                      :precision="6"
-                      :min="-90"
-                      :max="90"
-                      placeholder="Lat"
-                    />
-                    <span class="coordinate-unit">deg</span>
-                  </div>
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Alt</span>
-                    <el-input-number
-                      v-model="simulationForm.startCoordinate.alt"
-                      :controls="false"
-                      :precision="2"
-                      :min="-1000"
-                      :max="50000"
-                      placeholder="Alt"
-                    />
-                    <span class="coordinate-unit">m</span>
-                  </div>
-                  <el-input-number v-model="simulationForm.startCoordinate.lon" :controls="false" :precision="6" placeholder="经" />
-                  <el-input-number v-model="simulationForm.startCoordinate.lat" :controls="false" :precision="6" placeholder="纬" />
-                  <el-input-number v-model="simulationForm.startCoordinate.alt" :controls="false" :precision="2" placeholder="高" />
+                  <el-input-number
+                    v-model="simulationForm.startCoordinate.lon"
+                    :controls="false"
+                    :precision="6"
+                    :min="-180"
+                    :max="180"
+                    placeholder="Lon"
+                  />
+                  <el-input-number
+                    v-model="simulationForm.startCoordinate.lat"
+                    :controls="false"
+                    :precision="6"
+                    :min="-90"
+                    :max="90"
+                    placeholder="Lat"
+                  />
+                  <el-input-number
+                    v-model="simulationForm.startCoordinate.alt"
+                    :controls="false"
+                    :precision="2"
+                    :min="-1000"
+                    :max="50000"
+                    placeholder="Alt"
+                  />
                 </div>
               </div>
-              <div class="field-item">
+              <div class="field-item field-item--stack coordinate-field">
                 <span class="field-label">终点坐标：</span>
                 <div class="triple-inputs coordinate-inputs coordinate-inputs--end">
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Lon</span>
-                    <el-input-number
-                      v-model="simulationForm.endCoordinate.lon"
-                      :controls="false"
-                      :precision="6"
-                      :min="-180"
-                      :max="180"
-                      placeholder="Lon"
-                    />
-                    <span class="coordinate-unit">deg</span>
-                  </div>
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Lat</span>
-                    <el-input-number
-                      v-model="simulationForm.endCoordinate.lat"
-                      :controls="false"
-                      :precision="6"
-                      :min="-90"
-                      :max="90"
-                      placeholder="Lat"
-                    />
-                    <span class="coordinate-unit">deg</span>
-                  </div>
-                  <div class="coordinate-input">
-                    <span class="coordinate-name">Alt</span>
-                    <el-input-number
-                      v-model="simulationForm.endCoordinate.alt"
-                      :controls="false"
-                      :precision="2"
-                      :min="-1000"
-                      :max="50000"
-                      placeholder="Alt"
-                    />
-                    <span class="coordinate-unit">m</span>
-                  </div>
-                  <el-input-number v-model="simulationForm.endCoordinate.lon" :controls="false" :precision="6" placeholder="经" />
-                  <el-input-number v-model="simulationForm.endCoordinate.lat" :controls="false" :precision="6" placeholder="纬" />
-                  <el-input-number v-model="simulationForm.endCoordinate.alt" :controls="false" :precision="2" placeholder="高" />
+                  <el-input-number
+                    v-model="simulationForm.endCoordinate.lon"
+                    :controls="false"
+                    :precision="6"
+                    :min="-180"
+                    :max="180"
+                    placeholder="Lon"
+                  />
+                  <el-input-number
+                    v-model="simulationForm.endCoordinate.lat"
+                    :controls="false"
+                    :precision="6"
+                    :min="-90"
+                    :max="90"
+                    placeholder="Lat"
+                  />
+                  <el-input-number
+                    v-model="simulationForm.endCoordinate.alt"
+                    :controls="false"
+                    :precision="2"
+                    :min="-1000"
+                    :max="50000"
+                    placeholder="Alt"
+                  />
                 </div>
               </div>
             </div>
@@ -310,7 +280,7 @@
                     <el-radio value="csv">csv</el-radio>
                   </el-radio-group>
                 </el-form-item>
-                <el-form-item label="数据模型">
+                <el-form-item v-if="currentSimulationTab.showDataSource" label="数据模型">
                   <div class="data-source-row">
                     <el-radio-group v-model="currentSimulationTabState.dataSourceType">
                       <el-radio value="existing">基于已有数据</el-radio>
@@ -353,7 +323,7 @@
                   />
                   <span class="unit-text">Hz</span>
                 </el-form-item>
-                <el-form-item label="目标数量">
+                <el-form-item v-if="currentSimulationTab.showTargetNum" label="目标数量">
                   <el-input-number
                     v-model="currentSimulationTabState.targetNum"
                     :min="0"
@@ -363,87 +333,6 @@
                   />
                 </el-form-item>
               </el-form>
-
-              <div class="python-config-card">
-                <div class="metric-table-card__title">Python 请求参数</div>
-                <div class="form-grid form-grid--three">
-                  <div class="field-item field-item--stack">
-                    <span class="field-label">起始速度</span>
-                    <div class="triple-inputs">
-                      <el-input-number
-                        v-model="currentSimulationTabState.startVelocity.vx"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="vx"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.startVelocity.vy"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="vy"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.startVelocity.vz"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="vz"
-                      />
-                    </div>
-                  </div>
-                  <div class="field-item field-item--stack">
-                    <span class="field-label">初始姿态</span>
-                    <div class="triple-inputs">
-                      <el-input-number
-                        v-model="currentSimulationTabState.startAttitude.roll"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="roll"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.startAttitude.pitch"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="pitch"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.startAttitude.yaw"
-                        :controls="false"
-                        :precision="2"
-                        placeholder="yaw"
-                      />
-                    </div>
-                  </div>
-                  <div class="field-item field-item--stack">
-                    <span class="field-label">随机种子</span>
-                    <div class="quadruple-inputs">
-                      <el-input-number
-                        v-model="currentSimulationTabState.randomSeeds.host"
-                        :controls="false"
-                        :precision="0"
-                        placeholder="host"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.randomSeeds.enemy"
-                        :controls="false"
-                        :precision="0"
-                        placeholder="enemy"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.randomSeeds.wingman"
-                        :controls="false"
-                        :precision="0"
-                        placeholder="wingman"
-                      />
-                      <el-input-number
-                        v-model="currentSimulationTabState.randomSeeds.attitude"
-                        :controls="false"
-                        :precision="0"
-                        placeholder="attitude"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <div class="metric-table-card">
                 <div class="metric-table-card__title">字段说明</div>
@@ -455,27 +344,40 @@
                 >
                   <el-table-column label="字段名称" min-width="180">
                     <template #default="{ row }">
-                      <el-input v-model="row.fieldName" />
+                      <span class="metric-cell">{{ row.fieldName }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="数据类型" width="140" align="center">
                     <template #default="{ row }">
-                      <el-input v-model="row.dataType" />
+                      <span class="metric-cell metric-cell--center">{{ row.dataType }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="推荐值" width="140" align="center">
                     <template #default="{ row }">
-                      <el-input v-model="row.recommendedValue" />
+                      <el-input
+                        v-if="isMetricValueEditable(row.recommendedValue)"
+                        v-model="row.recommendedValue"
+                        class="metric-edit-input"
+                      />
+                      <span v-else class="metric-cell metric-cell--center">{{ row.recommendedValue }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="波动域" width="140" align="center">
                     <template #default="{ row }">
-                      <el-input v-model="row.fluctuationRange" />
+                      <div v-if="isMetricValueEditable(row.fluctuationRange)" class="metric-fluctuation-input">
+                        <span class="metric-fluctuation-prefix">&plusmn;</span>
+                        <el-input
+                          :model-value="row.fluctuationRange"
+                          class="metric-edit-input metric-edit-input--fluctuation"
+                          @update:model-value="value => updateFluctuationRange(row, value)"
+                        />
+                      </div>
+                      <span v-else class="metric-cell metric-cell--center">{{ row.fluctuationRange }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="描述与战术意义（Description & Tactic）" min-width="360">
                     <template #default="{ row }">
-                      <el-input v-model="row.description" />
+                      <span class="metric-cell metric-cell--wrap">{{ row.description }}</span>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -585,17 +487,128 @@ const COORDINATE_RULES = [
 
 const motionModelOptions = ['直线模型', '盘旋模型', '折线模型', '机动模型']
 const simulationTabs = [
-  { code: 'INS', label: '载机惯导数据' },
-  { code: 'ATTITUDE', label: '姿态' },
-  { code: 'RADAR_TRACK', label: '雷达航迹' },
-  { code: 'ADS_B', label: 'ADS_B' },
-  { code: 'EW', label: '电子战' },
-  { code: 'AIS', label: 'AIS' },
-  { code: 'ADSB', label: 'ADS-B' },
-  { code: 'COMM', label: '通信数据' },
-  { code: 'DATA9', label: '数据 9' },
-  { code: 'DATA10', label: '数据 10' }
+  { code: 'INS', label: '载机惯导数据', showDataSource: false, showTargetNum: false },
+  { code: 'ATTITUDE', label: '姿态', showDataSource: false, showTargetNum: false },
+  { code: 'RADAR_TRACK', label: '雷达航迹', showDataSource: true, showTargetNum: true },
+  { code: 'ADS_B', label: 'ADS_B', showDataSource: true, showTargetNum: true },
+  { code: 'EW', label: '电子战', showDataSource: true, showTargetNum: true },
+  { code: 'AIS', label: 'AIS', showDataSource: true, showTargetNum: true },
+  { code: 'ADSB', label: 'ADS-B', showDataSource: true, showTargetNum: true },
+  { code: 'COMM', label: '通信数据', showDataSource: true, showTargetNum: true },
+  { code: 'DATA9', label: '数据 9', showDataSource: true, showTargetNum: true },
+  { code: 'DATA10', label: '数据 10', showDataSource: true, showTargetNum: true }
 ]
+
+const attitudeMetricBlueprint = [
+  { fieldName: 'timestamp', dataType: 'BigInt', recommendedValue: '/', fluctuationRange: '/', description: '时间戳' },
+  { fieldName: 'euler_pitch', dataType: 'Float', recommendedValue: '/', fluctuationRange: '/', description: '俯仰角。' },
+  { fieldName: 'euler_roll', dataType: 'Float', recommendedValue: '/', fluctuationRange: '/', description: '滚转角。' },
+  { fieldName: 'euler_yaw', dataType: 'Float', recommendedValue: '/', fluctuationRange: '/', description: '偏航角。' },
+  {
+    fieldName: 'rate_p',
+    dataType: 'Float',
+    description: '滚转角速率',
+    recommendedFactory: () => randomSignedFloat(30, 2),
+    fluctuationFactory: () => createFluctuationText(0.5, 5, 2)
+  },
+  {
+    fieldName: 'rate_q',
+    dataType: 'Float',
+    description: '俯仰角速率',
+    recommendedFactory: () => randomSignedFloat(20, 2),
+    fluctuationFactory: () => createFluctuationText(0.5, 4, 2)
+  },
+  {
+    fieldName: 'rate_r',
+    dataType: 'Float',
+    description: '偏航角速率',
+    recommendedFactory: () => randomSignedFloat(25, 2),
+    fluctuationFactory: () => createFluctuationText(0.5, 4.5, 2)
+  },
+  {
+    fieldName: 'flight_path_angle',
+    dataType: 'Float',
+    description: '预留',
+    recommendedFactory: () => randomSignedFloat(15, 2),
+    fluctuationFactory: () => createFluctuationText(0.2, 2.5, 2)
+  },
+  {
+    fieldName: 'angle_of_attack',
+    dataType: 'Float',
+    description: '预留',
+    recommendedFactory: () => randomFloat(0, 18, 2),
+    fluctuationFactory: () => createFluctuationText(0.1, 2, 2)
+  },
+  { fieldName: 'sideslip_angle', dataType: 'Float', recommendedValue: '/', fluctuationRange: '/', description: '预留' },
+  {
+    fieldName: 'ahrs_status',
+    dataType: 'Enum',
+    recommendedValue: '/',
+    fluctuationRange: '/',
+    description: 'AHRS系统状态：ALIGNING（对准中）、COARSE（粗对准）'
+  }
+]
+
+const localMetricTemplateMap = {
+  INS: [
+    { fieldName: 'timestamp', dataType: 'uint32', recommendedValue: '/', fluctuationRange: '/', description: '高精度时钟' },
+    { fieldName: 'lat', dataType: 'Double', recommendedValue: '/', fluctuationRange: '/', description: '纬度' },
+    { fieldName: 'lon', dataType: 'Double', recommendedValue: '/', fluctuationRange: '/', description: '经度' },
+    { fieldName: 'alt', dataType: 'Double', recommendedValue: '/', fluctuationRange: '/', description: '高度' },
+    {
+      fieldName: 'true_airspeed',
+      dataType: 'Float',
+      description: '真空速，三速度求解',
+      recommendedFactory: () => randomFloat(180, 320, 2),
+      fluctuationFactory: () => createFluctuationText(1, 12, 2)
+    },
+    {
+      fieldName: 'heading_true',
+      dataType: 'Float',
+      description: '真航向，机头指向相对于真北的角度',
+      recommendedFactory: () => randomFloat(0, 359.99, 2),
+      fluctuationFactory: () => createFluctuationText(0.5, 6, 2)
+    },
+    {
+      fieldName: 'vel_north',
+      dataType: 'Float',
+      description: '北向速度',
+      recommendedFactory: () => randomSignedFloat(250, 2),
+      fluctuationFactory: () => createFluctuationText(0.5, 8, 2)
+    },
+    {
+      fieldName: 'vel_east',
+      dataType: 'Float',
+      description: '东向速度',
+      recommendedFactory: () => randomSignedFloat(250, 2),
+      fluctuationFactory: () => createFluctuationText(0.5, 8, 2)
+    },
+    {
+      fieldName: 'vel_vertical',
+      dataType: 'Float',
+      description: '地向速度，上升为正',
+      recommendedFactory: () => randomSignedFloat(35, 2),
+      fluctuationFactory: () => createFluctuationText(0.2, 3, 2)
+    },
+    {
+      fieldName: 'nav_mode',
+      dataType: 'Enum',
+      recommendedValue: '/',
+      fluctuationRange: '/',
+      description: '导航模式状态：ALIGN（对准中）、INERTIAL（惯导）'
+    },
+    {
+      fieldName: 'ins_status_w',
+      dataType: 'Hex',
+      recommendedValue: '/',
+      fluctuationRange: '/',
+      description: '系统状态字。包含BIT自检结果、传感器状态'
+    }
+  ],
+  ATTITUDE: attitudeMetricBlueprint,
+  RADAR_TRACK: attitudeMetricBlueprint,
+  ADS_B: attitudeMetricBlueprint
+}
 
 const defaultActiveTab = 'INS'
 const activeSimulationTab = ref(defaultActiveTab)
@@ -642,60 +655,37 @@ function createCoordinate() {
   }
 }
 
-function createVelocity() {
-  return {
-    vx: 10,
-    vy: 0,
-    vz: 0
+function randomFloat(min, max, precision = 2) {
+  return (Math.random() * (max - min) + min).toFixed(precision)
+}
+
+function randomSignedFloat(limit, precision = 2) {
+  return ((Math.random() * 2 - 1) * limit).toFixed(precision)
+}
+
+function createFluctuationText(min, max, precision = 2) {
+  return `±${randomFloat(min, max, precision)}`
+}
+
+function resolveMetricDisplayValue(rawValue, factory) {
+  if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+    return rawValue
   }
+  return typeof factory === 'function' ? String(factory()) : ''
 }
 
-function createAttitudeState() {
+function isMetricValueEditable(value) {
+  return String(value ?? '').trim() !== '/'
+}
+
+function buildLocalMetric(metric = {}, index = 0) {
   return {
-    roll: 0,
-    pitch: 0,
-    yaw: 0
-  }
-}
-
-function createRandomSeeds() {
-  return {
-    host: 42,
-    enemy: 43,
-    wingman: 44,
-    attitude: 45
-  }
-}
-
-function normalizeNumberValue(value, fallback) {
-  return value === null || value === undefined || value === '' ? fallback : value
-}
-
-function normalizeVelocity(velocity) {
-  const fallback = createVelocity()
-  return {
-    vx: normalizeNumberValue(velocity?.vx, fallback.vx),
-    vy: normalizeNumberValue(velocity?.vy, fallback.vy),
-    vz: normalizeNumberValue(velocity?.vz, fallback.vz)
-  }
-}
-
-function normalizeAttitudeState(attitude) {
-  const fallback = createAttitudeState()
-  return {
-    roll: normalizeNumberValue(attitude?.roll, fallback.roll),
-    pitch: normalizeNumberValue(attitude?.pitch, fallback.pitch),
-    yaw: normalizeNumberValue(attitude?.yaw, fallback.yaw)
-  }
-}
-
-function normalizeRandomSeeds(seeds) {
-  const fallback = createRandomSeeds()
-  return {
-    host: normalizeNumberValue(seeds?.host, fallback.host),
-    enemy: normalizeNumberValue(seeds?.enemy, fallback.enemy),
-    wingman: normalizeNumberValue(seeds?.wingman, fallback.wingman),
-    attitude: normalizeNumberValue(seeds?.attitude, fallback.attitude)
+    fieldName: metric.fieldName || '',
+    dataType: metric.dataType || '',
+    recommendedValue: resolveMetricDisplayValue(metric.recommendedValue, metric.recommendedFactory),
+    fluctuationRange: resolveMetricDisplayValue(metric.fluctuationRange, metric.fluctuationFactory),
+    description: metric.description || '',
+    sortNo: metric.sortNo || index + 1
   }
 }
 
@@ -703,14 +693,63 @@ function cloneMetric(metric = {}, index = 0) {
   return {
     fieldName: metric.fieldName || '',
     dataType: metric.dataType || '',
-    recommendedValue: metric.recommendedValue || '/',
-    fluctuationRange: metric.fluctuationRange || '/',
+    recommendedValue: metric.recommendedValue ?? '',
+    fluctuationRange: metric.fluctuationRange ?? '',
+    description: metric.description || '',
+    sortNo: metric.sortNo || index + 1
+  }
+}
+
+function normalizeFluctuationRangeValue(value) {
+  if (String(value ?? '').trim() === '/') {
+    return '/'
+  }
+  return String(value ?? '').replace(/^[\s+\-\u00B1]+/, '').trim()
+}
+
+function updateFluctuationRange(row, value) {
+  row.fluctuationRange = normalizeFluctuationRangeValue(value)
+}
+
+function formatFluctuationRangeForSubmit(value) {
+  const normalized = normalizeFluctuationRangeValue(value)
+  return normalized && normalized !== '/' ? `\u00B1${normalized}` : normalized
+}
+
+createFluctuationText = function(min, max, precision = 2) {
+  return `\u00B1${randomFloat(min, max, precision)}`
+}
+
+buildLocalMetric = function(metric = {}, index = 0) {
+  return {
+    fieldName: metric.fieldName || '',
+    dataType: metric.dataType || '',
+    recommendedValue: resolveMetricDisplayValue(metric.recommendedValue, metric.recommendedFactory),
+    fluctuationRange: normalizeFluctuationRangeValue(
+      resolveMetricDisplayValue(metric.fluctuationRange, metric.fluctuationFactory)
+    ),
+    description: metric.description || '',
+    sortNo: metric.sortNo || index + 1
+  }
+}
+
+cloneMetric = function(metric = {}, index = 0) {
+  return {
+    fieldName: metric.fieldName || '',
+    dataType: metric.dataType || '',
+    recommendedValue: metric.recommendedValue ?? '',
+    fluctuationRange: normalizeFluctuationRangeValue(metric.fluctuationRange ?? ''),
     description: metric.description || '',
     sortNo: metric.sortNo || index + 1
   }
 }
 
 function getMetricTemplate(tabCode) {
+  const localMetrics = localMetricTemplateMap[tabCode]
+  if (Array.isArray(localMetrics)) {
+    return localMetrics.map((metric, index) => buildLocalMetric(metric, index))
+  }
+
   const metrics = metricTemplateMap.value?.[tabCode] || metricTemplateMap.value?.INS || []
   return Array.isArray(metrics) ? metrics.map((metric, index) => cloneMetric(metric, index)) : []
 }
@@ -720,14 +759,11 @@ function createTabState(tab) {
     enabled: tab.code === defaultActiveTab,
     dataName: '',
     outputType: 'bit',
-    dataSourceType: 'simulate',
+    dataSourceType: tab.showDataSource ? 'existing' : 'simulate',
     sourceFileName: '',
     timeRange: [],
     frequencyHz: 8,
     targetNum: 1,
-    startVelocity: createVelocity(),
-    startAttitude: createAttitudeState(),
-    randomSeeds: createRandomSeeds(),
     metrics: getMetricTemplate(tab.code)
   }
 }
@@ -1075,7 +1111,7 @@ function buildMetricPayload(groupCode) {
     fieldName: metric.fieldName,
     dataType: metric.dataType,
     recommendedValue: metric.recommendedValue,
-    fluctuationRange: metric.fluctuationRange,
+    fluctuationRange: formatFluctuationRangeForSubmit(metric.fluctuationRange),
     description: metric.description,
     sortNo: metric.sortNo
   }))
@@ -1123,9 +1159,6 @@ function buildTaskPayload() {
           endTimeMs: toTimestamp(item.state.timeRange?.[1]),
           frequencyHz: item.state.frequencyHz,
           targetNum: item.state.targetNum,
-          startVelocity: normalizeVelocity(item.state.startVelocity),
-          startAttitude: normalizeAttitudeState(item.state.startAttitude),
-          randomSeeds: normalizeRandomSeeds(item.state.randomSeeds),
           metrics: buildMetricPayload(item.code)
         }
       ]
@@ -1160,7 +1193,7 @@ function legacyValidateSimulationForm() {
       activeSimulationTab.value = tab.code
       return false
     }
-    if (state.targetNum === null || state.targetNum === undefined) {
+    if (tab.showTargetNum && (state.targetNum === null || state.targetNum === undefined)) {
       ElMessage.warning(`请填写“${tab.label}”的目标数量`)
       activeSimulationTab.value = tab.code
       return false
@@ -1170,7 +1203,7 @@ function legacyValidateSimulationForm() {
       activeSimulationTab.value = tab.code
       return false
     }
-    if (state.dataSourceType === 'existing' && !state.sourceFileName) {
+    if (tab.showDataSource && state.dataSourceType === 'existing' && !state.sourceFileName) {
       ElMessage.warning(`请选择“${tab.label}”的数据源文件`)
       activeSimulationTab.value = tab.code
       return false
@@ -1227,7 +1260,7 @@ function validateSimulationForm(enabledTabs = getEnabledSimulationTabs()) {
       activeSimulationTab.value = tab.code
       return false
     }
-    if (state.targetNum === null || state.targetNum === undefined) {
+    if (tab.showTargetNum && (state.targetNum === null || state.targetNum === undefined)) {
       ElMessage.warning(`\u8bf7\u586b\u5199 ${tab.label} \u7684\u76ee\u6807\u6570\u91cf`)
       activeSimulationTab.value = tab.code
       return false
@@ -1249,7 +1282,7 @@ function validateSimulationForm(enabledTabs = getEnabledSimulationTabs()) {
       activeSimulationTab.value = tab.code
       return false
     }
-    if (state.dataSourceType === 'existing' && !state.sourceFileName) {
+    if (tab.showDataSource && state.dataSourceType === 'existing' && !state.sourceFileName) {
       ElMessage.warning(`\u8bf7\u9009\u62e9 ${tab.label} \u7684\u6570\u636e\u6e90\u6587\u4ef6`)
       activeSimulationTab.value = tab.code
       return false
@@ -1396,6 +1429,15 @@ onBeforeUnmount(() => {
   align-items: flex-start;
 }
 
+.coordinate-field {
+  gap: 10px;
+}
+
+.coordinate-field .field-label {
+  width: auto;
+  font-weight: 600;
+}
+
 .field-label {
   width: 88px;
   flex-shrink: 0;
@@ -1416,33 +1458,18 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.coordinate-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+.coordinate-inputs {
+  padding: 0;
 }
 
-.coordinate-inputs > :deep(.el-input-number) {
-  display: none;
+.coordinate-inputs :deep(.el-input-number) {
+  width: 100%;
 }
 
-.coordinate-input :deep(.el-input-number) {
-  flex: 1;
-}
-
-.coordinate-name {
-  width: 32px;
-  flex-shrink: 0;
-  color: #606266;
-  font-size: 13px;
-}
-
-.coordinate-unit {
-  flex-shrink: 0;
-  color: #909399;
-  font-size: 13px;
-  white-space: nowrap;
+.coordinate-inputs :deep(.el-input-number .el-input__wrapper) {
+  background: #fff;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 6px;
 }
 
 .quadruple-inputs {
@@ -1490,10 +1517,6 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.python-config-card {
-  margin-bottom: 18px;
-}
-
 .metric-table-card {
   margin-top: 8px;
 }
@@ -1503,6 +1526,46 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 700;
   color: #303133;
+}
+
+.metric-table-card :deep(.el-table .cell) {
+  white-space: normal;
+}
+
+.metric-cell {
+  display: block;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.metric-cell--center {
+  text-align: center;
+}
+
+.metric-edit-input {
+  width: 100%;
+}
+
+.metric-fluctuation-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.metric-fluctuation-prefix {
+  flex: none;
+  color: #606266;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.metric-edit-input--fluctuation {
+  flex: 1;
+}
+
+.metric-edit-input :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
 }
 
 .data-source-row {

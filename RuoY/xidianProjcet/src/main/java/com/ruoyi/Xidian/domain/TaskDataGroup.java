@@ -22,6 +22,7 @@ public class TaskDataGroup implements Serializable {
     private Vector3 startVelocity;
     private Attitude startAttitude;
     private RandomSeeds randomSeeds;
+    private Boolean isSimulation;
     private TaskDataMetric metric;
 
     public Long getId() {
@@ -158,5 +159,12 @@ public class TaskDataGroup implements Serializable {
 
     public void setMetric(TaskDataMetric metric) {
         this.metric = metric;
+    }
+
+    public void setIsSimulation(Boolean isSimulation){
+        this.isSimulation = isSimulation;
+    }
+    public Boolean getIsSimulation(){
+        return isSimulation;
     }
 }

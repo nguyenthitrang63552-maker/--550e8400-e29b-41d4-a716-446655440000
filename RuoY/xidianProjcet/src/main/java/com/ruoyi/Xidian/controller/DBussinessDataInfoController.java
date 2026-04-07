@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -110,9 +111,8 @@ public class DBussinessDataInfoController extends BaseController
     {
         try {
             return AjaxResult.success(ddataService.insertDdataInfo(ddataInfo, file));
-        }
-        catch (Exception e) {
-            throw new ServiceException("导入业务数据失败");
+        } catch (Exception e){
+            return AjaxResult.error(e.getMessage());
         }
     }
 
@@ -125,7 +125,7 @@ public class DBussinessDataInfoController extends BaseController
             return AjaxResult.success(ddataService.updateDdataInfo(ddataInfo));
         }
         catch (Exception e) {
-            throw new ServiceException("更新业务数据失败");
+            throw new ServiceException(e.getMessage());
         }
     }
 
