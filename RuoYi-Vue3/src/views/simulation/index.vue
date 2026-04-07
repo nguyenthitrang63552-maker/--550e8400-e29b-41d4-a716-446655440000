@@ -121,6 +121,7 @@
     </div>
 
     <el-dialog
+      v-if="false"
       v-model="dialogVisible"
       :fullscreen="isDialogFullscreen"
       :width="dialogWidth"
@@ -181,11 +182,82 @@
         />
       </div>
     </el-dialog>
+
+    <teleport to="body">
+      <div v-if="dialogVisible" class="preview-window-layer" :class="{ 'is-minimized': isDialogMinimized }">
+        <div v-if="!isDialogMinimized" class="preview-window-overlay"></div>
+        <section
+          ref="previewWindowRef"
+          class="preview-window"
+          :class="{
+            'is-maximized': isDialogMaximized,
+            'is-minimized': isDialogMinimized,
+            'is-dragging': isDragging
+          }"
+          :style="previewWindowStyle"
+        >
+          <header
+            class="preview-window__header"
+            :class="{ 'is-draggable': isDialogNormal }"
+            @mousedown="startDrag"
+            @dblclick="toggleDialogMaximize"
+            @click="handleWindowHeaderClick"
+          >
+            <div class="preview-window__title-group">
+              <div class="preview-window__title">态势显示</div>
+              <div class="preview-window__subtitle">{{ activePreviewName || '实验态势预览' }}</div>
+            </div>
+            <div class="preview-window__controls" @mousedown.stop>
+              <button
+                type="button"
+                class="preview-window__control preview-window__control--minimize"
+                aria-label="最小化"
+                @click.stop="minimizeDialogWindow"
+              >
+                <span class="preview-window__control-icon preview-window__control-icon--minimize"></span>
+              </button>
+              <button
+                type="button"
+                class="preview-window__control"
+                :aria-label="isDialogMaximized ? '还原' : '最大化'"
+                @click.stop="toggleDialogMaximize"
+              >
+                <span
+                  class="preview-window__control-icon"
+                  :class="isDialogMaximized ? 'preview-window__control-icon--restore' : 'preview-window__control-icon--maximize'"
+                ></span>
+              </button>
+              <button
+                type="button"
+                class="preview-window__control preview-window__control--close"
+                aria-label="关闭"
+                @click.stop="closePreviewWindow"
+              >
+                <span class="preview-window__control-icon preview-window__control-icon--close"></span>
+              </button>
+            </div>
+          </header>
+
+          <div v-show="!isDialogMinimized" class="preview-window__body">
+            <div class="module-frame-wrapper">
+              <iframe
+                v-if="dialogVisible && moduleUrl"
+                :src="moduleUrl"
+                class="module-frame"
+                frameborder="0"
+                allowfullscreen
+              />
+              <div v-else class="preview-window__empty">暂未获取到可显示的态势页面</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup name="simulation">
-import { computed, getCurrentInstance, onMounted, reactive, ref, toRefs } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, toRefs } from 'vue'
 import 'splitpanes/dist/splitpanes.css'
 import { useRoute } from 'vue-router'
 import { addDateRange } from '@/utils/ruoyi'
@@ -230,6 +302,237 @@ const frameWrapperStyle = computed(() => {
   }
   return { height: 'min(80vh, 860px)' }
 })
+
+const previewWindowRef = ref(null)
+const activePreviewName = ref('')
+const dialogWindowState = ref('normal')
+const dialogWindowStateBeforeMinimize = ref('normal')
+const isDragging = ref(false)
+
+const viewport = reactive({
+  width: 0,
+  height: 0
+})
+
+const dialogWindowRect = reactive({
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0
+})
+
+const lastNormalDialogRect = reactive({
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0
+})
+
+const dragState = reactive({
+  startX: 0,
+  startY: 0,
+  originLeft: 0,
+  originTop: 0
+})
+
+const isDialogMinimized = computed(() => dialogWindowState.value === 'minimized')
+const isDialogMaximized = computed(() => dialogWindowState.value === 'maximized')
+const isDialogNormal = computed(() => dialogWindowState.value === 'normal')
+
+const previewWindowStyle = computed(() => {
+  const viewportWidth = viewport.width || 1440
+  const viewportHeight = viewport.height || 900
+
+  if (isDialogMinimized.value) {
+    const width = Math.min(360, Math.max(viewportWidth - 24, 280))
+    return {
+      left: `${Math.max(viewportWidth - width - 12, 12)}px`,
+      top: `${Math.max(viewportHeight - 68, 12)}px`,
+      width: `${width}px`,
+      height: '56px'
+    }
+  }
+
+  if (isDialogMaximized.value) {
+    return {
+      left: '12px',
+      top: '12px',
+      width: `${Math.max(viewportWidth - 24, 320)}px`,
+      height: `${Math.max(viewportHeight - 24, 240)}px`
+    }
+  }
+
+  return {
+    left: `${dialogWindowRect.left}px`,
+    top: `${dialogWindowRect.top}px`,
+    width: `${dialogWindowRect.width}px`,
+    height: `${dialogWindowRect.height}px`
+  }
+})
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function clampMetric(value, preferredMin, max) {
+  const safeMax = Math.max(max, 280)
+  const safeMin = Math.min(preferredMin, safeMax)
+  return Math.min(Math.max(value, safeMin), safeMax)
+}
+
+function assignRect(target, source) {
+  target.left = source.left
+  target.top = source.top
+  target.width = source.width
+  target.height = source.height
+}
+
+function normalizeDialogRect(sourceRect) {
+  const viewportWidth = viewport.width || window.innerWidth || 1440
+  const viewportHeight = viewport.height || window.innerHeight || 900
+  const width = clampMetric(Number(sourceRect.width) || Math.round(viewportWidth * 0.84), 960, Math.max(viewportWidth - 32, 320))
+  const height = clampMetric(Number(sourceRect.height) || Math.round(viewportHeight * 0.82), 620, Math.max(viewportHeight - 32, 260))
+  const maxLeft = Math.max(8, viewportWidth - width - 8)
+  const maxTop = Math.max(8, viewportHeight - height - 8)
+
+  return {
+    left: clamp(Number(sourceRect.left) || 0, 8, maxLeft),
+    top: clamp(Number(sourceRect.top) || 0, 8, maxTop),
+    width,
+    height
+  }
+}
+
+function createDefaultDialogRect() {
+  const viewportWidth = viewport.width || window.innerWidth || 1440
+  const viewportHeight = viewport.height || window.innerHeight || 900
+  const width = clampMetric(Math.round(viewportWidth * 0.84), 1120, Math.max(viewportWidth - 48, 360))
+  const height = clampMetric(Math.round(viewportHeight * 0.82), 680, Math.max(viewportHeight - 48, 320))
+
+  return normalizeDialogRect({
+    left: Math.round((viewportWidth - width) / 2),
+    top: Math.max(20, Math.round((viewportHeight - height) / 2)),
+    width,
+    height
+  })
+}
+
+function syncNormalDialogRect() {
+  assignRect(lastNormalDialogRect, dialogWindowRect)
+}
+
+function initializeDialogWindow() {
+  const rect = createDefaultDialogRect()
+  assignRect(dialogWindowRect, rect)
+  syncNormalDialogRect()
+  dialogWindowState.value = 'normal'
+  dialogWindowStateBeforeMinimize.value = 'normal'
+}
+
+function updateViewport() {
+  viewport.width = window.innerWidth
+  viewport.height = window.innerHeight
+
+  if (dialogVisible.value && isDialogNormal.value) {
+    const nextRect = normalizeDialogRect(dialogWindowRect)
+    assignRect(dialogWindowRect, nextRect)
+    syncNormalDialogRect()
+  }
+}
+
+function handleDragMove(event) {
+  if (!isDragging.value) {
+    return
+  }
+
+  const nextRect = normalizeDialogRect({
+    left: dragState.originLeft + event.clientX - dragState.startX,
+    top: dragState.originTop + event.clientY - dragState.startY,
+    width: dialogWindowRect.width,
+    height: dialogWindowRect.height
+  })
+
+  dialogWindowRect.left = nextRect.left
+  dialogWindowRect.top = nextRect.top
+  syncNormalDialogRect()
+}
+
+function stopDrag() {
+  if (!isDragging.value) {
+    return
+  }
+
+  isDragging.value = false
+  document.removeEventListener('mousemove', handleDragMove)
+  document.removeEventListener('mouseup', stopDrag)
+  document.body.style.userSelect = ''
+}
+
+function startDrag(event) {
+  if (!dialogVisible.value || !isDialogNormal.value || event.button !== 0) {
+    return
+  }
+
+  isDragging.value = true
+  dragState.startX = event.clientX
+  dragState.startY = event.clientY
+  dragState.originLeft = dialogWindowRect.left
+  dragState.originTop = dialogWindowRect.top
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', handleDragMove)
+  document.addEventListener('mouseup', stopDrag)
+  event.preventDefault()
+}
+
+function handleWindowHeaderClick() {
+  if (isDialogMinimized.value) {
+    if (dialogWindowStateBeforeMinimize.value === 'maximized') {
+      dialogWindowState.value = 'maximized'
+      return
+    }
+    restoreDialogWindow()
+  }
+}
+
+function restoreDialogWindow() {
+  stopDrag()
+  dialogWindowState.value = 'normal'
+  const rectSource = lastNormalDialogRect.width ? lastNormalDialogRect : createDefaultDialogRect()
+  const rect = normalizeDialogRect(rectSource)
+  assignRect(dialogWindowRect, rect)
+  syncNormalDialogRect()
+}
+
+function minimizeDialogWindow() {
+  stopDrag()
+  if (isDialogNormal.value) {
+    syncNormalDialogRect()
+  }
+  dialogWindowStateBeforeMinimize.value = isDialogMaximized.value ? 'maximized' : 'normal'
+  dialogWindowState.value = 'minimized'
+}
+
+function toggleDialogMaximize() {
+  stopDrag()
+  if (isDialogMaximized.value) {
+    restoreDialogWindow()
+    return
+  }
+
+  if (isDialogNormal.value) {
+    syncNormalDialogRect()
+  }
+  dialogWindowState.value = 'maximized'
+}
+
+function closePreviewWindow() {
+  stopDrag()
+  dialogVisible.value = false
+  moduleUrl.value = ''
+  activePreviewName.value = ''
+  dialogWindowState.value = 'normal'
+  dialogWindowStateBeforeMinimize.value = 'normal'
+}
 
 const data = reactive({
   queryParams: {
@@ -289,6 +592,8 @@ function handleView(row) {
   const baseUrl = getBaseModuleUrl()
   const separator = baseUrl.includes('?') ? '&' : '?'
   moduleUrl.value = baseUrl ? `${baseUrl}${separator}workflowId=${row.experimentId}&type=ex` : ''
+  activePreviewName.value = row.experimentName || `试验 ${row.experimentId || ''}`.trim()
+  initializeDialogWindow()
   dialogMode.value = 'large'
   dialogVisible.value = true
 }
@@ -304,11 +609,19 @@ function toggleDialogFullscreen() {
 function handleClose() {
   moduleUrl.value = ''
   dialogMode.value = 'large'
+  activePreviewName.value = ''
 }
 
 onMounted(() => {
+  updateViewport()
+  window.addEventListener('resize', updateViewport)
   getList()
   getProjectList()
+})
+
+onBeforeUnmount(() => {
+  stopDrag()
+  window.removeEventListener('resize', updateViewport)
 })
 </script>
 
@@ -571,6 +884,7 @@ onMounted(() => {
 
 .module-frame-wrapper {
   width: 100%;
+  height: 100%;
   background: #f5f7fa;
   overflow: hidden;
 }
@@ -581,6 +895,210 @@ onMounted(() => {
   min-height: 100%;
   border: none;
   display: block;
+}
+
+.preview-window-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  pointer-events: none;
+}
+
+.preview-window-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.24);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.preview-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  min-height: 56px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.24);
+  overflow: hidden;
+  pointer-events: auto;
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease;
+}
+
+.preview-window.is-dragging {
+  transition: none;
+  box-shadow: 0 30px 72px rgba(15, 23, 42, 0.3);
+}
+
+.preview-window.is-minimized {
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+}
+
+.preview-window.is-minimized .preview-window__header {
+  border-bottom: none;
+}
+
+.preview-window.is-minimized .preview-window__subtitle {
+  display: none;
+}
+
+.preview-window__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding-left: 18px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  user-select: none;
+}
+
+.preview-window__header.is-draggable {
+  cursor: move;
+}
+
+.preview-window__title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.preview-window__title {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.preview-window__subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.preview-window__controls {
+  display: flex;
+  align-items: stretch;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.preview-window__control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  min-width: 46px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.preview-window__control:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: #0f172a;
+}
+
+.preview-window__control--close:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.preview-window__control-icon {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.preview-window__control-icon--minimize::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 2px;
+  height: 1.8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.preview-window__control-icon--maximize {
+  box-sizing: border-box;
+  border: 1.6px solid currentColor;
+  border-radius: 2px;
+}
+
+.preview-window__control-icon--restore::before,
+.preview-window__control-icon--restore::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 1.6px solid currentColor;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.preview-window__control-icon--restore::before {
+  top: 0;
+  right: 0;
+}
+
+.preview-window__control-icon--restore::after {
+  left: 0;
+  bottom: 0;
+}
+
+.preview-window__control-icon--close::before,
+.preview-window__control-icon--close::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 12px;
+  height: 1.8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.preview-window__control-icon--close::before {
+  transform: rotate(45deg);
+}
+
+.preview-window__control-icon--close::after {
+  transform: rotate(-45deg);
+}
+
+.preview-window__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #f5f7fa;
+}
+
+.preview-window__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  color: #64748b;
+  font-size: 14px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
 }
 
 @media (max-width: 1440px) {
@@ -624,6 +1142,27 @@ onMounted(() => {
   :deep(.filter-action-group .el-button) {
     flex: 1 1 calc(50% - 5px);
     min-width: 0;
+  }
+
+  .preview-window {
+    min-width: 0;
+  }
+
+  .preview-window__header {
+    padding-left: 14px;
+  }
+
+  .preview-window__title-group {
+    gap: 8px;
+  }
+
+  .preview-window__subtitle {
+    display: none;
+  }
+
+  .preview-window__control {
+    width: 42px;
+    min-width: 42px;
   }
 
   .preview-dialog-header {
