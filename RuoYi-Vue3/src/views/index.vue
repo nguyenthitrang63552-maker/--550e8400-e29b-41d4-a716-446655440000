@@ -1445,6 +1445,27 @@ onBeforeUnmount(() => {
   color: #0f766e;
 }
 
+.hero-panel,
+.hero-score,
+.surface-card,
+.workflow-chart {
+  border-radius: 16px;
+}
+
+.metric-card,
+.snapshot-item,
+.command-card,
+.workflow-step,
+.focus-card,
+.alert-chip {
+  border-radius: 10px;
+}
+
+.hero-action,
+.focus-action {
+  border-radius: 8px;
+}
+
 @keyframes orbitFloat {
   0%,
   100% {

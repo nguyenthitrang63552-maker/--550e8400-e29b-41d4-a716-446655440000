@@ -1190,6 +1190,19 @@ function buildExportFileName(fileName, extension) {
   color: #e2e8f0;
 }
 
+:deep(.system-log-page .el-card),
+.log-guide-card,
+.overview-card,
+.file-item,
+.preview-list,
+.preview-line {
+  border-radius: 12px;
+}
+
+.preview-line__number {
+  border-radius: 8px;
+}
+
 @media (max-width: 1280px) {
   .system-log-shell {
     grid-template-columns: 1fr;

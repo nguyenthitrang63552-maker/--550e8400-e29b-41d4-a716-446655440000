@@ -422,13 +422,13 @@ onMounted(() => {
 :deep(.filter-form .el-input__wrapper:hover),
 :deep(.filter-form .el-select__wrapper:hover),
 :deep(.filter-form .el-range-editor.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #1677ff inset;
+  box-shadow: 0 0 0 1px #409eff inset;
 }
 
 :deep(.filter-form .el-input__wrapper.is-focus),
 :deep(.filter-form .el-select__wrapper.is-focused),
 :deep(.filter-form .el-range-editor.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15), 0 0 0 1px #1677ff inset;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15), 0 0 0 1px #409eff inset;
 }
 
 :deep(.filter-action-group .el-button) {
@@ -439,12 +439,12 @@ onMounted(() => {
 }
 
 :deep(.filter-action-group .el-button--primary) {
-  background: #1677ff;
-  border-color: #1677ff;
+  background: #409eff;
+  border-color: #409eff;
 }
 
 .filter-reset-button {
-  color: #1677ff;
+  color: #409eff;
   background: #ffffff;
   border-color: #d9d9d9;
 }
@@ -456,9 +456,9 @@ onMounted(() => {
 }
 
 :deep(.refresh-tool-button:hover) {
-  color: #1677ff;
-  border-color: #1677ff;
-  background: #f0f7ff;
+  color: #409eff;
+  border-color: #409eff;
+  background: #ecf5ff;
 }
 
 :deep(.simulation-table) {
@@ -502,7 +502,7 @@ onMounted(() => {
 }
 
 :deep(.simulation-table .action-link-view) {
-  color: #1677ff;
+  color: #409eff;
 }
 
 :deep(.preview-dialog .el-dialog) {
@@ -549,12 +549,12 @@ onMounted(() => {
   min-height: 32px;
   padding: 0 10px;
   border-radius: 8px;
-  color: #1677ff;
+  color: #409eff;
 }
 
 .preview-dialog-action:hover,
 .preview-dialog-action.is-active {
-  background: #f0f7ff;
+  background: #ecf5ff;
 }
 
 .preview-dialog-action.is-active {

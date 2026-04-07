@@ -88,7 +88,7 @@
   --el-table-header-text-color: var(--admin-text);
   --el-table-row-hover-bg-color: var(--admin-table-hover);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   background: var(--admin-surface);
 
@@ -229,15 +229,15 @@
   }
 
   .el-button:first-child {
-    border-radius: 10px 0 0 10px;
+    border-radius: 8px 0 0 8px;
   }
 
   .el-button:last-child {
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 8px 8px 0;
   }
 
   .el-button:only-child {
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .el-button:hover,

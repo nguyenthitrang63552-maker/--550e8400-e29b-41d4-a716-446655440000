@@ -354,9 +354,9 @@ getList()
 
 <style scoped>
 .notice-page {
-  --notice-primary: #2563eb;
-  --notice-primary-deep: #1d4ed8;
-  --notice-primary-soft: #eff6ff;
+  --notice-primary: #409eff;
+  --notice-primary-deep: #337ecc;
+  --notice-primary-soft: #ecf5ff;
   --notice-accent: #7c3aed;
   --notice-accent-deep: #6d28d9;
   --notice-accent-soft: #f5f3ff;
@@ -440,7 +440,7 @@ getList()
 .notice-toolbar-btn--primary {
   color: var(--notice-primary-deep);
   background: linear-gradient(135deg, #ffffff 0%, var(--notice-primary-soft) 100%);
-  border-color: #bfdbfe;
+  border-color: #b3d8ff;
 }
 
 .notice-toolbar-btn--accent {
@@ -500,7 +500,7 @@ getList()
 .notice-icon-btn--edit {
   color: var(--notice-primary-deep);
   background: var(--notice-primary-soft);
-  box-shadow: inset 0 0 0 1px #bfdbfe;
+  box-shadow: inset 0 0 0 1px #b3d8ff;
 }
 
 .notice-icon-btn--delete {
