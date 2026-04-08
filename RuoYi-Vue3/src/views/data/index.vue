@@ -71,8 +71,6 @@
                                 </el-select>
                             </el-form-item>
 
-                            <div class="query-row-break" aria-hidden="true"></div>
-
                             <el-form-item label="创建人" prop="createBy">
                                 <el-input v-model="queryParams.createBy" placeholder="请输入创建人" clearable class="query-control" @keyup.enter="handleQuery" />
                             </el-form-item>
@@ -98,7 +96,7 @@
                             </el-form-item>
                             <el-form-item class="query-action-item">
                                 <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                                <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+                                <el-button class="query-reset-btn" icon="Refresh" @click="resetQuery">重置</el-button>
                             </el-form-item>
                         </el-form>
                         <div v-show="showSearch" class="action-surface__divider"></div>
@@ -152,8 +150,10 @@
                                 </el-button>
                             </div>
                             <div class="action-surface__meta">
-                                <span class="action-surface__pill">已选 {{ selectedCount }} 项</span>
-                                <span class="action-surface__pill action-surface__pill--muted">试验 {{ treeExperimentCount }} 个</span>
+                                <div class="action-surface__stats">
+                                    <span class="action-surface__pill">已选 {{ selectedCount }} 项</span>
+                                    <span class="action-surface__pill action-surface__pill--muted">试验 {{ treeExperimentCount }} 个</span>
+                                </div>
                                 <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
                             </div>
                         </div>
@@ -2120,7 +2120,7 @@ const submitUpload = async () => {
                 dataType: uploadDataForm.dataType,
                 isSimulation: uploadDataForm.isSimulation
             }
-            
+
             // 调用修改后的API，同时传递数据和文件
             await adddata(businessData, file.raw)
         }
@@ -2407,32 +2407,6 @@ onMounted(()=>{
   overflow: visible;
 }
 
-.data-workspace-page::before,
-.data-workspace-page::after {
-  content: '';
-  position: absolute;
-  border-radius: 999px;
-  pointer-events: none;
-  filter: blur(8px);
-  opacity: 0.65;
-}
-
-.data-workspace-page::before {
-  top: -80px;
-  right: -40px;
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, rgba(64, 94, 254, 0.18) 0%, rgba(64, 94, 254, 0) 72%);
-}
-
-.data-workspace-page::after {
-  left: -60px;
-  bottom: 140px;
-  width: 180px;
-  height: 180px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(14, 165, 233, 0) 72%);
-}
-
 .table-surface__eyebrow {
   margin: 0;
   color: #405efe;
@@ -2674,22 +2648,35 @@ onMounted(()=>{
 }
 
 .query-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+  align-items: end;
   margin-top: 0;
 }
 
 .query-form :deep(.el-form-item) {
-  flex: 0 0 268px;
-  width: 268px;
   margin: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.query-form :deep(.el-form-item__label) {
+  flex: 0 0 88px;
+  max-width: 88px;
+  justify-content: flex-end;
+  padding: 0;
+  line-height: 42px;
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .query-form :deep(.el-form-item__content) {
   flex: 1 1 auto;
   min-width: 0;
+  margin-left: 0 !important;
 }
 
 .query-control {
@@ -2712,15 +2699,8 @@ onMounted(()=>{
   box-shadow: 0 0 0 1px rgba(64, 94, 254, 0.42) inset, 0 0 0 4px rgba(64, 94, 254, 0.1);
 }
 
-.query-row-break {
-  flex-basis: 100%;
-  height: 0;
-  overflow: hidden;
-}
-
 .query-form :deep(.query-date-item) {
-  flex-basis: 308px;
-  width: 308px;
+  grid-column: span 2;
 }
 
 .query-date-control {
@@ -2728,15 +2708,36 @@ onMounted(()=>{
 }
 
 .query-form :deep(.query-action-item) {
-  flex: 0 0 auto;
-  width: auto;
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
 }
 
 .query-action-item :deep(.el-form-item__content) {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  width: 100%;
   gap: 12px;
+}
+
+.query-action-item :deep(.el-button) {
+  min-width: 128px;
+  height: 42px;
+}
+
+.query-action-item :deep(.query-reset-btn) {
+  color: #8b6b2f;
+  background: #fdf5e6;
+  border-color: #f1dfbb;
+}
+
+.query-action-item :deep(.query-reset-btn:hover),
+.query-action-item :deep(.query-reset-btn:focus) {
+  color: #7a5d26;
+  background: #fbefdc;
+  border-color: #ead4a7;
 }
 
 .action-surface,
@@ -2758,9 +2759,9 @@ onMounted(()=>{
 .action-surface__toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
 }
 
 .action-surface__meta {
@@ -2768,24 +2769,72 @@ onMounted(()=>{
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   margin-left: auto;
 }
 
 .global-actions-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
-  flex: 1 1 560px;
+  flex: 1 1 720px;
+}
+
+.action-surface__stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.action-surface__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .action-surface__meta :deep(.right-toolbar) {
   margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.98));
 }
 
 .action-surface__meta :deep(.right-toolbar .el-button) {
-  border-radius: 14px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: none;
+}
+
+.action-surface__meta :deep(.right-toolbar .el-button:hover),
+.action-surface__meta :deep(.right-toolbar .el-button:focus) {
+  color: #409eff;
+  border-color: rgba(64, 158, 255, 0.34);
+  background: #f8fbff;
 }
 
 .table-surface {
@@ -2916,32 +2965,21 @@ onMounted(()=>{
     width: 312px;
   }
 
-  .query-form :deep(.el-form-item) {
-    flex-basis: calc(50% - 8px);
-    width: calc(50% - 8px);
+  .query-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 20px;
   }
 
   .query-form :deep(.query-date-item) {
-    flex-basis: calc(50% - 8px);
-    width: calc(50% - 8px);
-  }
-
-  .query-row-break {
-    display: none;
+    grid-column: span 1;
   }
 
   .query-form :deep(.query-action-item) {
-    flex-basis: 100%;
-    width: 100%;
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 992px) {
-  .data-workspace-page::before,
-  .data-workspace-page::after {
-    display: none;
-  }
-
   .data-workspace-layout {
     flex-direction: column;
   }
@@ -2958,15 +2996,17 @@ onMounted(()=>{
   .action-surface__toolbar,
   .table-surface__header {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .action-surface__meta,
   .table-surface__meta {
     justify-content: flex-start;
+    margin-left: 0;
   }
 
-  .query-form {
-    gap: 12px;
+  .global-actions-row {
+    flex: 1 1 auto;
   }
 }
 
@@ -2997,26 +3037,44 @@ onMounted(()=>{
     padding-right: 16px;
   }
 
-  .query-form :deep(.el-form-item) {
-    flex-basis: 100%;
-    width: 100%;
+  .query-form {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
-  .query-form :deep(.query-date-item) {
-    width: 100%;
-    flex-basis: 100%;
+  .query-form :deep(.el-form-item) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .query-form :deep(.el-form-item__label) {
+    flex: 0 0 auto;
+    max-width: none;
+    line-height: 1.4;
+    justify-content: flex-start;
+  }
+
+  .query-form :deep(.query-date-item),
+  .query-form :deep(.query-action-item) {
+    grid-column: span 1;
   }
 
   .query-action-item :deep(.el-form-item__content) {
+    justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .query-action-item :deep(.el-button) {
+    flex: 1 1 136px;
   }
 }
 
 
 .toolbar-action-btn {
-  min-width: 96px;
-  height: 40px;
-  padding: 0 18px;
+  min-width: 138px;
+  height: 42px;
+  padding: 0 20px;
   border: none;
   border-radius: 8px;
   display: inline-flex;
@@ -3046,12 +3104,12 @@ onMounted(()=>{
 }
 
 .toolbar-action-btn--import {
-  background: linear-gradient(135deg, #b7d64a, #7ea61d);
+  background: linear-gradient(135deg, #66b1ff, #409eff);
 }
 
 .toolbar-action-btn--import:hover,
 .toolbar-action-btn--import:focus {
-  background: linear-gradient(135deg, #c7e35e, #8bb724);
+  background: linear-gradient(135deg, #79bbff, #53a8ff);
 }
 
 .toolbar-action-btn--project {
@@ -3064,21 +3122,21 @@ onMounted(()=>{
 }
 
 .toolbar-action-btn--experiment {
-  background: linear-gradient(135deg, #34d399, #0f766e);
+  background: linear-gradient(135deg, #66b1ff, #409eff);
 }
 
 .toolbar-action-btn--experiment:hover,
 .toolbar-action-btn--experiment:focus {
-  background: linear-gradient(135deg, #6ee7b7, #14b8a6);
+  background: linear-gradient(135deg, #79bbff, #53a8ff);
 }
 
 .toolbar-action-btn--export {
-  background: linear-gradient(135deg, #9b6dff, #7c3aed);
+  background: linear-gradient(135deg, #66b1ff, #409eff);
 }
 
 .toolbar-action-btn--export:hover,
 .toolbar-action-btn--export:focus {
-  background: linear-gradient(135deg, #ad84ff, #8b5cf6);
+  background: linear-gradient(135deg, #79bbff, #53a8ff);
 }
 
 .toolbar-action-btn--delete {
