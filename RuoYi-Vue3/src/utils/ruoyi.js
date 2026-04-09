@@ -4,7 +4,11 @@
  */
 
 // 日期格式化
+import axios from "axios"
+import { getToken } from "@/utils/auth"
 import { isExternal } from "@/utils/validate"
+
+const protectedResourceUrlCache = new Map()
 
 export function parseTime(time, pattern) {
   if (arguments.length === 0 || !time) {
@@ -147,6 +151,40 @@ export function resolveResourceUrl(url) {
     return `${baseApi}${normalizedUrl}`
   }
   return normalizedUrl
+}
+
+export async function resolveAvatarUrl(url) {
+  if (!url) {
+    return url
+  }
+  if (isExternal(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url
+  }
+
+  const normalizedUrl = url.startsWith("/") ? url : `/${url}`
+  if (import.meta.env.DEV || !normalizedUrl.startsWith("/profile/")) {
+    return resolveResourceUrl(normalizedUrl)
+  }
+
+  if (protectedResourceUrlCache.has(normalizedUrl)) {
+    return protectedResourceUrlCache.get(normalizedUrl)
+  }
+
+  try {
+    const baseApi = (import.meta.env.VITE_APP_BASE_API || "").replace(/\/$/, "")
+    const response = await axios({
+      method: "get",
+      url: `${baseApi}/common/download/resource?resource=${encodeURIComponent(normalizedUrl)}`,
+      responseType: "blob",
+      headers: { Authorization: "Bearer " + getToken() }
+    })
+    const objectUrl = URL.createObjectURL(response.data)
+    protectedResourceUrlCache.set(normalizedUrl, objectUrl)
+    return objectUrl
+  } catch (error) {
+    console.error("Failed to load protected avatar resource:", error)
+    return normalizedUrl
+  }
 }
 
 // 数据合并

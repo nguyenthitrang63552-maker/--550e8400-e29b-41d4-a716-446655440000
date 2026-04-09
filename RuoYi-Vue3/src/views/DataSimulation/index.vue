@@ -117,7 +117,7 @@
     <el-dialog
       v-model="simulationDialogOpen"
       title="新增数据仿真任务"
-      width="1380px"
+      width="1560px"
       top="3vh"
       append-to-body
       class="simulation-dialog"
@@ -331,7 +331,9 @@
                   <el-input-number
                     v-model="currentSimulationTabState.frequencyHz"
                     :min="1"
-                    :precision="2"
+                    :step="1"
+                    :precision="0"
+                    step-strictly
                     :controls="false"
                     placeholder="请输入整数"
                   />
@@ -385,6 +387,7 @@
                           class="metric-edit-input metric-edit-input--fluctuation"
                           @update:model-value="value => updateFluctuationRange(row, value)"
                         />
+                        <span class="metric-fluctuation-suffix">%</span>
                       </div>
                       <span v-else class="metric-cell metric-cell--center">{{ row.fluctuationRange }}</span>
                     </template>
@@ -745,7 +748,10 @@ function normalizeFluctuationRangeValue(value) {
   if (String(value ?? '').trim() === '/') {
     return '/'
   }
-  return String(value ?? '').replace(/^[\s+\-\u00B1]+/, '').trim()
+  return String(value ?? '')
+    .replace(/^[\s+\-\u00B1]+/, '')
+    .replace(/[%％\s]+$/, '')
+    .trim()
 }
 
 function updateFluctuationRange(row, value) {
@@ -795,11 +801,16 @@ function getMetricTemplate(tabCode) {
   return Array.isArray(metrics) ? metrics.map((metric, index) => cloneMetric(metric, index)) : []
 }
 
+function isPositiveInteger(value) {
+  const normalizedValue = Number(value)
+  return Number.isInteger(normalizedValue) && normalizedValue > 0
+}
+
 function createTabState(tab) {
   return {
     enabled: tab.code === defaultActiveTab,
     dataName: '',
-    outputType: 'bit',
+    outputType: 'csv',
     dataSourceType: tab.showDataSource ? 'existing' : 'simulate',
     sourceFileName: '',
     timeRange: [],
@@ -1266,7 +1277,7 @@ function legacyValidateSimulationForm() {
 
   for (const tab of enabledTabs) {
     const state = simulationForm.tabs[tab.code]
-    if (!state.frequencyHz) {
+    if (!isPositiveInteger(state.frequencyHz)) {
       ElMessage.warning(`请填写“${tab.label}”的数据帧率`)
       activeSimulationTab.value = tab.code
       return false
@@ -1333,8 +1344,8 @@ function validateSimulationForm(enabledTabs = getEnabledSimulationTabs()) {
 
   for (const tab of enabledTabs) {
     const state = simulationForm.tabs[tab.code]
-    if (!state.frequencyHz || Number(state.frequencyHz) <= 0) {
-      ElMessage.warning(`\u8bf7\u586b\u5199 ${tab.label} \u7684\u6570\u636e\u5e27\u7387`)
+    if (!isPositiveInteger(state.frequencyHz)) {
+      ElMessage.warning(`\u8bf7\u586b\u5199 ${tab.label} \u7684\u6b63\u6574\u6570\u6570\u636e\u5e27\u7387`)
       activeSimulationTab.value = tab.code
       return false
     }
@@ -1765,6 +1776,13 @@ onBeforeUnmount(() => {
 }
 
 .metric-fluctuation-prefix {
+  flex: none;
+  color: #606266;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.metric-fluctuation-suffix {
   flex: none;
   color: #606266;
   font-weight: 600;

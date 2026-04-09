@@ -114,6 +114,7 @@
             <if test="id != null and id != ''"> AND d.id = #{id} </if>
             <if test="dataName != null and dataName != ''"> AND d.data_name LIKE concat('%', #{dataName}, '%') </if>
             <if test="projectId != null and projectId != ''"> AND p.project_id = #{projectId} </if>
+            <if test="experimentId != null and experimentId != ''">AND d.experiment_id = #{experimentId} </if>
             <if test="experimentName != null and experimentName != ''"> AND e.experiment_name LIKE concat('%', #{experimentName}, '%') </if>
             <if test="createBy != null and createBy != ''"> AND e.create_by = #{createBy} </if>
             <if test="isSimulation != null"> AND d.is_simulation = #{isSimulation} </if>

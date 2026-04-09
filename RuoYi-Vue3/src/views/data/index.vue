@@ -3,10 +3,10 @@
         <div class="data-workspace-layout">
             <aside class="workspace-sidebar">
                 <div class="workspace-sidebar-shell">
-                    <div class="head-container workspace-sidebar__search">
+                    <div class="workspace-sidebar__search">
                         <el-input v-model="name" placeholder="搜索项目或试验名称" clearable prefix-icon="Search" class="workspace-tree-search"></el-input>
                     </div>
-                    <div class="body-container workspace-sidebar__tree">
+                    <div class="workspace-sidebar__tree">
                         <el-tree
                             :data="treeTableOptions"
                             :props="{ label: 'label', children: 'children' }"
@@ -94,10 +94,6 @@
                                     class="query-date-control"
                                 />
                             </el-form-item>
-                            <el-form-item class="query-action-item">
-                                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                                <el-button class="query-reset-btn" icon="Refresh" @click="resetQuery">重置</el-button>
-                            </el-form-item>
                         </el-form>
                         <div v-show="showSearch" class="action-surface__divider"></div>
                         <div class="action-surface__toolbar">
@@ -149,12 +145,9 @@
                                   删除
                                 </el-button>
                             </div>
-                            <div class="action-surface__meta">
-                                <div class="action-surface__stats">
-                                    <span class="action-surface__pill">已选 {{ selectedCount }} 项</span>
-                                    <span class="action-surface__pill action-surface__pill--muted">试验 {{ treeExperimentCount }} 个</span>
-                                </div>
-                                <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+                            <div class="toolbar-query-actions">
+                                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                                <el-button class="query-reset-btn" icon="Refresh" @click="resetQuery">重置</el-button>
                             </div>
                         </div>
                     </section>
@@ -162,13 +155,7 @@
                     <section class="table-surface">
                         <div class="table-surface__header">
                             <div>
-                                <p class="table-surface__eyebrow">Dataset View</p>
                                 <h4 class="table-surface__title">数据清单</h4>
-                            </div>
-                            <div class="table-surface__meta">
-                                <span class="table-meta-chip">总数 {{ total }}</span>
-                                <span class="table-meta-chip table-meta-chip--real">真实 {{ realDataCount }}</span>
-                                <span class="table-meta-chip table-meta-chip--simulation">模拟 {{ simulationDataCount }}</span>
                             </div>
                         </div>
 
@@ -1398,6 +1385,7 @@ const data = reactive({
         pageNum: 1,
         pageSize: 10,
         dataName: undefined,
+        experimentId: undefined,
         experimentName: undefined,
         projectId: undefined,
         createBy: undefined,
@@ -2024,24 +2012,6 @@ function handleMovePathChange(nodeId) {
 
 const moveTargetExperimentName = computed(() => selectedMovePathNode.value?.experimentName || '')
 const moveTargetProjectName = computed(() => selectedMovePathNode.value?.projectName || '')
-const treeExperimentCount = computed(() => {
-  let count = 0
-
-  const walk = (nodes = []) => {
-    nodes.forEach(node => {
-      if (node?.type === 'experiment') count += 1
-      if (Array.isArray(node?.children) && node.children.length) {
-        walk(node.children)
-      }
-    })
-  }
-
-  walk(treeTableOptions.value || [])
-  return count
-})
-const selectedCount = computed(() => ids.value.length)
-const realDataCount = computed(() => businessList.value.filter(item => item?.isSimulation === true).length)
-const simulationDataCount = computed(() => businessList.value.filter(item => item?.isSimulation === false).length)
 const detailDialogMinimized = computed(() => detailWindowState.value === 'minimized')
 const detailDialogFullscreen = computed(() => detailWindowState.value === 'maximized')
 const isDetailDialogNormal = computed(() => detailWindowState.value === 'normal')
@@ -2554,11 +2524,13 @@ watch(detailVisible, visible => {
 function handleNodeClick(data) {
     if(data.type==="experiment"){
         queryParams.value.id=undefined
-        queryParams.value.experimentName=data.label
+        queryParams.value.experimentId=data.experimentId ?? data.id
+        queryParams.value.experimentName=data.name ?? data.label
         queryParams.value.projectId=data.parentId
     }
     else if(data.type==="project"){
         queryParams.value.id=undefined
+        queryParams.value.experimentId=undefined
         const project = projectOptions.value.find(item => item.projectId == data.id)
         queryParams.value.projectId = project ? project.projectId : data.id
         queryParams.value.experimentName=undefined
@@ -2575,6 +2547,7 @@ function resetQuery() {
         pageNum: 1,
         pageSize: 10,
         dataName: undefined,
+        experimentId: undefined,
         experimentName: undefined,
         projectId: undefined,
         createBy: undefined,
@@ -2743,6 +2716,7 @@ function handleView(row) {
 }
 
 function handleQuery(){
+    queryParams.value.pageNum = 1
     getList()
 }
 function getList(){
@@ -2774,9 +2748,12 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
   min-height: calc(100vh - 148px);
   overflow: visible;
+  margin: -20px;
+  padding: 2px 2px 16px;
+  box-sizing: border-box;
 }
 
 .table-surface__eyebrow {
@@ -2788,40 +2765,18 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 
-.table-surface__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.table-meta-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  background: rgba(255, 255, 255, 0.9);
-  color: #334155;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  backdrop-filter: blur(10px);
-}
-
 .data-workspace-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(280px, 296px) minmax(0, 1fr);
   align-items: stretch;
-  gap: 20px;
+  gap: 2px;
   flex: 1 1 auto;
   min-height: 0;
 }
 
 .workspace-sidebar {
-  flex: 0 0 340px;
-  width: 340px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 296px;
   min-width: 0;
 }
 
@@ -2833,14 +2788,14 @@ onBeforeUnmount(() => {
 .workspace-sidebar-shell {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 4px;
   height: 100%;
   min-height: calc(100vh - 148px);
-  padding: 20px;
-  border: 1px solid rgba(226, 232, 240, 0.88);
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .action-surface,
@@ -2861,13 +2816,14 @@ onBeforeUnmount(() => {
 
 .workspace-sidebar__search {
   margin: 0;
+  padding: 0;
 }
 
 .workspace-tree-search :deep(.el-input__wrapper) {
   min-height: 44px;
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.96);
-  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.85) inset;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.8) inset;
 }
 
 .workspace-tree-search :deep(.el-input__wrapper.is-focus) {
@@ -2878,35 +2834,35 @@ onBeforeUnmount(() => {
 .workspace-sidebar__tree {
   flex: 1;
   min-height: 0;
-  padding: 14px 12px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
-  border: 1px solid rgba(226, 232, 240, 0.92);
+  padding: 6px 4px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(226, 232, 240, 0.68);
   overflow: auto;
 }
 
-.body-container :deep(.el-tree) {
+.workspace-sidebar__tree :deep(.el-tree) {
   background: transparent;
 }
 
-.body-container :deep(.el-tree-node__content) {
+.workspace-sidebar__tree :deep(.el-tree-node__content) {
   height: 42px;
   border-radius: 14px;
   padding-right: 8px;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.body-container :deep(.el-tree-node__content:hover) {
+.workspace-sidebar__tree :deep(.el-tree-node__content:hover) {
   background: #f4f7fd;
   transform: translateX(2px);
 }
 
-.body-container :deep(.is-current > .el-tree-node__content) {
+.workspace-sidebar__tree :deep(.is-current > .el-tree-node__content) {
   background: rgba(64, 94, 254, 0.1);
   box-shadow: inset 0 0 0 1px rgba(64, 94, 254, 0.18);
 }
 
-.body-container :deep(.is-current > .el-tree-node__content) .tree-node-content__label {
+.workspace-sidebar__tree :deep(.is-current > .el-tree-node__content) .tree-node-content__label {
   color: #2944db;
   font-weight: 700;
 }
@@ -2942,8 +2898,8 @@ onBeforeUnmount(() => {
   transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.body-container :deep(.el-tree-node__content:hover) .tree-node-content__action,
-.body-container :deep(.is-current > .el-tree-node__content) .tree-node-content__action {
+.workspace-sidebar__tree :deep(.el-tree-node__content:hover) .tree-node-content__action,
+.workspace-sidebar__tree :deep(.is-current > .el-tree-node__content) .tree-node-content__action {
   opacity: 1;
 }
 
@@ -3021,7 +2977,7 @@ onBeforeUnmount(() => {
 
 .query-form {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px 24px;
   align-items: end;
   margin-top: 0;
@@ -3069,10 +3025,6 @@ onBeforeUnmount(() => {
 .query-form :deep(.el-date-editor.el-input__wrapper.is-focus) {
   background: #fff;
   box-shadow: 0 0 0 1px rgba(64, 94, 254, 0.42) inset, 0 0 0 4px rgba(64, 94, 254, 0.1);
-}
-
-.query-form :deep(.query-date-item) {
-  grid-column: span 2;
 }
 
 .query-date-control {
@@ -3153,6 +3105,20 @@ onBeforeUnmount(() => {
   flex: 1 1 720px;
 }
 
+.toolbar-query-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.toolbar-query-actions :deep(.el-button) {
+  min-width: 128px;
+  height: 42px;
+}
+
 .action-surface__stats {
   display: flex;
   flex-wrap: wrap;
@@ -3215,23 +3181,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 0;
   gap: 16px;
-}
-
-.table-surface__meta {
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.table-meta-chip--real {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.16);
-  color: #047857;
-}
-
-.table-meta-chip--simulation {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.18);
-  color: #b45309;
 }
 
 .data-table {
@@ -3333,8 +3282,11 @@ onBeforeUnmount(() => {
 
 @media (max-width: 1480px) {
   .workspace-sidebar {
-    flex-basis: 312px;
-    width: 312px;
+    max-width: 288px;
+  }
+
+  .data-workspace-layout {
+    grid-template-columns: minmax(268px, 288px) minmax(0, 1fr);
   }
 
   .query-form {
@@ -3352,13 +3304,19 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 992px) {
+  .data-workspace-page {
+    margin: -16px;
+    padding: 2px 2px 12px;
+  }
+
   .data-workspace-layout {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .workspace-sidebar {
     width: 100%;
-    flex-basis: auto;
+    max-width: none;
   }
 
   .workspace-sidebar-shell {
@@ -3371,8 +3329,7 @@ onBeforeUnmount(() => {
     align-items: stretch;
   }
 
-  .action-surface__meta,
-  .table-surface__meta {
+  .action-surface__meta {
     justify-content: flex-start;
     margin-left: 0;
   }
@@ -3380,13 +3337,20 @@ onBeforeUnmount(() => {
   .global-actions-row {
     flex: 1 1 auto;
   }
+
+  .toolbar-query-actions {
+    width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
-  .workspace-sidebar-shell,
   .action-surface,
   .table-surface {
     padding: 16px;
+  }
+
+  .workspace-sidebar__tree {
+    border-radius: 16px;
   }
 
   .detail-drawer__header {
@@ -4390,12 +4354,10 @@ onBeforeUnmount(() => {
   transform: translateY(-6px);
 }
 
-.workspace-sidebar-shell,
 .action-surface,
 .table-surface,
 .detail-card,
-.action-surface__pill,
-.table-meta-chip {
+.action-surface__pill {
   border-radius: 10px;
 }
 

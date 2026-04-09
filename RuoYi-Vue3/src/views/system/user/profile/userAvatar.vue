@@ -63,7 +63,7 @@ import "vue-cropper/dist/index.css"
 import { VueCropper } from "vue-cropper"
 import { uploadAvatar } from "@/api/system/user"
 import useUserStore from "@/store/modules/user"
-import { resolveResourceUrl } from "@/utils/ruoyi"
+import { resolveAvatarUrl } from "@/utils/ruoyi"
 
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
@@ -122,9 +122,9 @@ function uploadImg() {
   proxy.$refs.cropper.getCropBlob(data => {
     const formData = new FormData()
     formData.append("avatarfile", data, options.filename)
-    uploadAvatar(formData).then(response => {
+    uploadAvatar(formData).then(async response => {
       open.value = false
-      options.img = resolveResourceUrl(response.imgUrl)
+      options.img = await resolveAvatarUrl(response.imgUrl)
       userStore.avatar = options.img
       proxy.$modal.msgSuccess("修改成功")
       visible.value = false
