@@ -73,16 +73,26 @@
             @keyup.enter="handleRegister"
           >
             <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
-            <template #suffix>
-              <span
-                v-if="passwordStrength"
-                class="password-strength"
-                :class="passwordStrength.className"
-              >
-                {{ passwordStrength.label }}
-              </span>
-            </template>
           </el-input>
+            <div v-if="registerForm.password" class="password-meter">
+              <div class="password-meter__summary">
+                <span class="password-meter__title">密码强度</span>
+                <span class="password-meter__label" :class="passwordStrengthDisplay?.className">
+                  {{ passwordStrengthDisplay?.label }}
+                </span>
+              </div>
+              <div class="password-meter__track" aria-hidden="true">
+                <span class="password-meter__segment" :class="[{ 'is-active': passwordStrengthScore >= 1 }, passwordStrengthDisplay?.className]"></span>
+                <span class="password-meter__segment" :class="[{ 'is-active': passwordStrengthScore >= 2 }, passwordStrengthDisplay?.className]"></span>
+                <span class="password-meter__segment" :class="[{ 'is-active': passwordStrengthScore >= 3 }, passwordStrengthDisplay?.className]"></span>
+              </div>
+            <div class="password-meter__checks">
+              <span class="password-meter__check" :class="{ 'is-passed': passwordProfile.hasLetter }">字母</span>
+              <span class="password-meter__check" :class="{ 'is-passed': passwordProfile.hasNumber }">数字</span>
+              <span class="password-meter__check" :class="{ 'is-passed': passwordProfile.hasSpecial }">特殊字符</span>
+              <span class="password-meter__check" :class="{ 'is-passed': passwordProfile.hasMinLength }">8位及以上</span>
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item prop="confirmPassword" class="custom-form-item">
@@ -181,6 +191,17 @@ function getPasswordProfile(password = "") {
   }
 }
 
+const passwordProfile = computed(() => {
+  const password = registerForm.value.password || ""
+  const profile = getPasswordProfile(password)
+
+  return {
+    ...profile,
+    hasMinLength: password.length >= 8,
+    length: password.length
+  }
+})
+
 const passwordStrength = computed(() => {
   const password = registerForm.value.password
 
@@ -201,6 +222,44 @@ const passwordStrength = computed(() => {
   return hasMixedCase || password.length >= 12
     ? passwordStrengthLevels.strong
     : passwordStrengthLevels.medium
+})
+
+const passwordStrengthDisplay = computed(() => {
+  const password = registerForm.value.password || ""
+
+  if (!password) {
+    return null
+  }
+
+  if (password.length < 5 || !passwordStrength.value) {
+    return { label: "弱", className: "is-weak" }
+  }
+
+  if (passwordStrength.value.className === "is-medium") {
+    return { label: "中", className: "is-medium" }
+  }
+
+  if (passwordStrength.value.className === "is-strong") {
+    return { label: "强", className: "is-strong" }
+  }
+
+  return { label: "弱", className: "is-weak" }
+})
+
+const passwordStrengthScore = computed(() => {
+  if (!passwordStrengthDisplay.value) {
+    return 0
+  }
+
+  if (passwordStrengthDisplay.value.className === "is-weak") {
+    return 1
+  }
+
+  if (passwordStrengthDisplay.value.className === "is-medium") {
+    return 2
+  }
+
+  return 3
 })
 
 const validatePasswordComplexity = (rule, value, callback) => {
@@ -306,47 +365,26 @@ getCode()
 .register {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0d1016, #141923 48%, #0c0f15);
+  background:
+    linear-gradient(135deg, rgba(6, 16, 28, 0.3), rgba(7, 18, 32, 0.55)),
+    url("@/assets/images/login-background.png") center / cover no-repeat;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 32px 16px 72px;
+  padding: 0 0 72px;
 }
 
 .register-card {
-  width: min(520px, 100%);
-  min-height: 620px;
+  width: min(100vw, 100%);
+  min-height: calc(100vh - 72px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
-  background: linear-gradient(0deg, #000, #272727);
-  border-radius: 22px;
-  position: relative;
-  isolation: isolate;
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.28);
-}
-
-.register-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 2px;
-  border-radius: inherit;
-  background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
-  background-size: 400%;
-  z-index: -1;
-  animation: steam 20s linear infinite;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  padding: 32px 24px;
 }
 
 .register-form {
-  width: 100%;
-  max-width: 420px;
+  width: min(560px, calc(100% - 72px));
 }
 
 .form {
@@ -355,31 +393,28 @@ getCode()
   gap: 16px;
   width: 100%;
   padding: 2em;
-  background:
-    linear-gradient(180deg, rgba(18, 20, 26, 0.92), rgba(12, 14, 19, 0.96));
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 18px 40px rgba(0, 0, 0, 0.35);
+  background: rgba(12, 20, 34, 0.68);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .form:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 22px 48px rgba(0, 0, 0, 0.42);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.32);
 }
 
 #heading {
   text-align: center;
   margin: 0 0 8px;
   color: #fff;
-  font-size: 1.5em;
+  font-size: clamp(18px, 2vw, 24px);
   font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .register-autofill-guard {
@@ -414,14 +449,14 @@ getCode()
 :deep(.register-form .el-input__wrapper) {
   min-height: 48px;
   padding: 0 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid transparent;
+  border-radius: 25px;
+  background: rgba(9, 18, 30, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 :deep(.register-form .el-input__wrapper.is-focus) {
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(76, 158, 255, 0.9) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(64, 158, 255, 0.95) !important;
 }
 
 :deep(.register-form .el-input__inner) {
@@ -440,37 +475,102 @@ getCode()
   color: #fff;
 }
 
-:deep(.password-form-item .el-input__suffix-inner) {
-  display: flex;
-  align-items: center;
+.password-meter {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.password-strength {
-  display: inline-flex;
+.password-meter__summary {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 42px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.password-meter__title {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.password-meter__label {
+  min-width: 36px;
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  transition: background 0.2s ease, color 0.2s ease;
+  line-height: 1.5;
+  text-align: center;
+  color: #fff;
 }
 
-.password-strength.is-weak {
-  color: #ffb4b4;
+.password-meter__label.is-weak {
   background: rgba(255, 107, 107, 0.18);
+  color: #ffb7b7;
 }
 
-.password-strength.is-medium {
-  color: #ffd27d;
+.password-meter__label.is-medium {
   background: rgba(255, 184, 77, 0.18);
+  color: #ffd68c;
 }
 
-.password-strength.is-strong {
-  color: #8ff0c0;
+.password-meter__label.is-strong {
   background: rgba(43, 199, 118, 0.2);
+  color: #92efbf;
+}
+
+.password-meter__track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.password-meter__segment {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.password-meter__segment.is-active {
+  transform: scaleY(1.05);
+}
+
+.password-meter__segment.is-active.is-weak {
+  background: #ff7d7d;
+}
+
+.password-meter__segment.is-active.is-medium {
+  background: #ffbe5c;
+}
+
+.password-meter__segment.is-active.is-strong {
+  background: #36d98a;
+}
+
+.password-meter__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.password-meter__check {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.password-meter__check.is-passed {
+  border-color: rgba(64, 158, 255, 0.32);
+  background: rgba(64, 158, 255, 0.12);
+  color: #b8dcff;
 }
 
 :deep(.captcha-form-item .el-form-item__content) {
@@ -489,7 +589,7 @@ getCode()
   border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .register-code-img {
@@ -516,15 +616,15 @@ getCode()
   margin-left: 0;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, #121722, #242a37);
+  background: #409eff;
   color: #fff;
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 24px rgba(64, 158, 255, 0.26);
   transition: 0.3s ease-in-out;
 }
 
 :deep(.register-action-item .el-button:hover) {
-  background: linear-gradient(135deg, #1a2230, #2f3848);
+  background: #2f8ff0;
   color: #fff;
 }
 
@@ -560,34 +660,22 @@ getCode()
   letter-spacing: 1px;
 }
 
-@keyframes steam {
-  0% {
-    background-position: 0 0;
-  }
-
-  50% {
-    background-position: 400% 0;
-  }
-
-  100% {
-    background-position: 0 0;
-  }
-}
-
 @media (max-width: 520px) {
   .register {
-    padding: 24px 12px 72px;
+    padding: 0 0 72px;
   }
 
   .register-card {
-    min-height: auto;
-    padding: 14px;
-    border-radius: 18px;
+    min-height: calc(100vh - 72px);
+    padding: 18px 12px;
+  }
+
+  .register-form {
+    width: calc(100% - 28px);
   }
 
   .form {
-    padding: 1.5em;
-    border-radius: 16px;
+    padding: 1.4em;
   }
 
   :deep(.captcha-form-item .el-form-item__content) {
