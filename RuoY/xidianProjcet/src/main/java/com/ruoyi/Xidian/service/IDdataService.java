@@ -45,4 +45,6 @@ public interface IDdataService {
     int backupDataById(Integer id);
 
     List<BackupData> selectBackupDataList(BackupData backupData);
+
+    String restoreDataFile(Integer BackDataId);
 }

@@ -28,7 +28,7 @@
         <result column="create_by" property="createBy" />
         <result column="create_time" property="createTime" />
     </resultMap>
-    <insert id="insertDdataInfo">
+    <insert id="insertDdataInfo" useGeneratedKeys="true" keyProperty="id" keyColumn="ID">
         INSERT INTO SYSTEM_COLLABORATION_TEST.md_data_relation (
             target_id,
             target_type,

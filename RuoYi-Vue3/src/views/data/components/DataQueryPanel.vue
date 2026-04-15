@@ -69,13 +69,13 @@
         </el-button>
         <el-button class="toolbar-action-btn toolbar-action-btn--export" type="primary" @click="emit('rename-data')" v-hasPermi="['dataInfo:info:Rename']">
           <template #icon>
-            <svg-icon icon-class="rename" />
+            <svg-icon icon-class="example" />
           </template>
           规范重命名
         </el-button>
         <el-button class="toolbar-action-btn toolbar-action-btn--restore" type="primary" @click="emit('restore-data')" v-hasPermi="['dataInfo:info:backup', 'dataInfo:info:restore']">
           <template #icon>
-            <svg-icon icon-class="restore" />
+            <svg-icon icon-class="documentation" />
           </template>
           数据还原
         </el-button>
@@ -87,7 +87,7 @@
           v-hasPermi="['dataInfo:info:compare']"
         >
           <template #icon>
-            <svg-icon icon-class="compare" />
+            <svg-icon icon-class="eye-open" />
           </template>
           数据比对
         </el-button>
@@ -239,7 +239,7 @@ const dateRangeModel = computed({
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 18px;
 }
 
@@ -249,6 +249,7 @@ const dateRangeModel = computed({
   gap: 14px;
   align-items: center;
   flex: 1 1 720px;
+  min-width: 0;
 }
 
 .toolbar-query-actions {
@@ -258,6 +259,12 @@ const dateRangeModel = computed({
   align-items: center;
   gap: 12px;
   margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.global-actions-row :deep(.el-button + .el-button),
+.toolbar-query-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .toolbar-query-actions :deep(.el-button) {
@@ -331,6 +338,17 @@ const dateRangeModel = computed({
   .query-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px 20px;
+  }
+}
+
+@media (max-width: 1520px) {
+  .global-actions-row {
+    flex: 1 1 100%;
+  }
+
+  .toolbar-query-actions {
+    flex: 1 1 100%;
+    margin-left: 0;
   }
 }
 

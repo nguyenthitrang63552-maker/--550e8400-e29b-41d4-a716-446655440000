@@ -98,6 +98,7 @@
             :items="comparePreviewItems"
             :max-height="comparePreviewDialogBodyMaxHeight"
             :item-height="comparePreviewItemHeight"
+            @pagination="handleComparePreviewPagination"
             @closed="handleCompareDialogClosed"
         />
 
@@ -108,10 +109,12 @@
             :total="backupTotal"
             :query-params="backupQueryParams"
             :date-range="backupDateRange"
+            :restoring-id="restoringBackupId"
             :format-time="formatListTime"
             @update:date-range="backupDateRange = $event"
             @search="handleBackupQuery"
             @reset="resetBackupQuery"
+            @restore="handleRestoreBackupRecord"
             @pagination="getBackupList"
         />
 
@@ -540,7 +543,7 @@
     </div>
 </template>
 <script setup name="Business">
-import {getdataList,getdataDetail,getMovePathTree,updatedata,deldata,adddata,previewData,downloadData,RenameDataName,backupData,getBackupDataList} from '@/api/data/bussiness'
+import {getdataList,getdataDetail,getMovePathTree,updatedata,deldata,adddata,previewData,downloadData,RenameDataName,backupData,getBackupDataList,restoreBackupData} from '@/api/data/bussiness'
 import { getExperimentTree, addProjectInfo, addExperimentInfo, getInfo, updateInfo, delInfo } from "@/api/data/info"
 import { addDateRange, blobValidate } from "@/utils/ruoyi"
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
@@ -599,6 +602,7 @@ const backupLoading = ref(false)
 const backupTotal = ref(0)
 const backupList = ref([])
 const backupDateRange = ref([])
+const restoringBackupId = ref(null)
 
 // 文件管理器相关状态
 const fileLoading = ref(false)
@@ -900,7 +904,7 @@ function handleRenameData() {
       ElMessage.error(res.msg || '重命名失败')
     }
   }).catch(err => {
-    showInfoRequestError(err, '重命名失败')
+    //showInfoRequestError(err, '重命名失败')
   })
 }
 
@@ -977,6 +981,42 @@ async function handleBackupData(row) {
   } catch (error) {
     const errorMessage = error?.message || error?.response?.data?.msg || '备份失败'
     ElMessage.error(errorMessage)
+  }
+}
+
+async function handleRestoreBackupRecord(row) {
+  const backupId = row?.id
+  if (!backupId) {
+    ElMessage.warning('未获取到要还原的备份数据')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(`确认还原备份数据“${row.dataName || backupId}”吗？`, '还原确认', {
+      type: 'warning',
+      confirmButtonText: '确认还原',
+      cancelButtonText: '取消'
+    })
+  } catch (error) {
+    return
+  }
+
+  restoringBackupId.value = backupId
+  try {
+    const response = await restoreBackupData(backupId, { silent: true })
+    if (response?.code === 200) {
+      proxy.$modal.msgSuccess(response?.msg || '还原成功')
+      await getBackupList()
+      getList()
+      return
+    }
+
+    ElMessage.error(response?.msg || '还原失败')
+  } catch (error) {
+    const errorMessage = error?.message || error?.response?.data?.msg || '还原失败'
+    ElMessage.error(errorMessage)
+  } finally {
+    restoringBackupId.value = null
   }
 }
 
@@ -1994,6 +2034,8 @@ function createComparePreviewItem(row) {
     previewType: resolveComparePreviewType(row),
     rows: [],
     total: 0,
+    pageNum: 1,
+    pageSize: COMPARE_PREVIEW_PAGE_SIZE,
     message: '',
     objectUrl: ''
   }
@@ -2214,12 +2256,12 @@ async function loadComparePreviewItem(item) {
   const currentRow = item.row
   item.loading = true
   item.message = ''
-  item.rows = []
-  item.total = 0
   revokeComparePreviewItemUrl(item)
 
   if (!currentRow?.experimentId || !currentRow?.dataFilePath) {
     item.previewType = 'unsupported'
+    item.rows = []
+    item.total = 0
     item.message = '缺少比对预览所需的文件参数'
     item.loading = false
     return
@@ -2230,8 +2272,8 @@ async function loadComparePreviewItem(item) {
       const response = await previewData({
         experimentId: currentRow.experimentId,
         dataFilePath: currentRow.dataFilePath,
-        pageNum: 1,
-        pageSize: COMPARE_PREVIEW_PAGE_SIZE
+        pageNum: Number(item.pageNum) || 1,
+        pageSize: Number(item.pageSize) || COMPARE_PREVIEW_PAGE_SIZE
       })
 
       if (response.code === 200) {
@@ -2239,9 +2281,13 @@ async function loadComparePreviewItem(item) {
         item.previewType = pageData.previewType || resolveComparePreviewType(currentRow)
         item.rows = Array.isArray(pageData.rows) ? pageData.rows : []
         item.total = Number(pageData.total) || 0
+        item.pageNum = Number(pageData.pageNum) || Number(item.pageNum) || 1
+        item.pageSize = Number(pageData.pageSize) || Number(item.pageSize) || COMPARE_PREVIEW_PAGE_SIZE
         item.message = pageData.message || ''
       } else {
         item.previewType = resolveComparePreviewType(currentRow)
+        item.rows = []
+        item.total = 0
         item.message = response.msg || '预览失败，请下载后查看'
       }
       return
@@ -2253,15 +2299,24 @@ async function loadComparePreviewItem(item) {
     }
 
     item.previewType = 'unsupported'
+    item.rows = []
+    item.total = 0
     item.message = isBinaryFile(currentRow)
       ? '暂不支持比对二进制文件，请下载后查看'
       : '暂不支持在线比对该文件'
   } catch (error) {
     item.previewType = resolveComparePreviewType(currentRow)
+    item.rows = []
+    item.total = 0
     item.message = error?.message || '预览失败，请下载后查看'
   } finally {
     item.loading = false
   }
+}
+
+function handleComparePreviewPagination(item) {
+  if (!item) return
+  return loadComparePreviewItem(item)
 }
 
 function handleCompareDialogClosed() {

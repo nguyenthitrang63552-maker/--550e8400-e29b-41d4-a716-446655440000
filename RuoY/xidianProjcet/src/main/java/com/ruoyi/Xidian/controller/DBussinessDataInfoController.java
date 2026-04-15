@@ -317,6 +317,7 @@ public class DBussinessDataInfoController extends BaseController
     @PreAuthorize("@ss.hasAnyPermi('dataInfo:info:backup,dataInfo:info:restore')")
     @GetMapping("/backup/list")
     public TableDataInfo getbackData(BackupData backupData){
+        backupData.setIsRestored(0);
         startPage();
         try {
             return getDataTable(ddataService.selectBackupDataList(backupData));
@@ -326,10 +327,17 @@ public class DBussinessDataInfoController extends BaseController
     }
 
     //还原删除的数据
+    @PreAuthorize("@ss.hasPermi('dataInfo:info:restore')")
     @PostMapping("/back/restore/{id}")
     public AjaxResult restoreBackupData(@PathVariable Integer id){
-
-        return AjaxResult.success("恢复成功");
+        if(id == null){
+            return AjaxResult.error("请选择要恢复的数据");
+        }
+        String msg = ddataService.restoreDataFile(id);
+        if(msg == null) {
+            return AjaxResult.success("恢复成功");
+        }
+        return AjaxResult.error(msg);
     }
 
 
