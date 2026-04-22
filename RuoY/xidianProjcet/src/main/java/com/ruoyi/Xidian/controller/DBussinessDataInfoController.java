@@ -144,7 +144,6 @@ public class DBussinessDataInfoController extends BaseController
         }
     }
 
-    @PreAuthorize("@ss.hasPermi('dataInfo:info:insert')")
     @PostMapping("/transport")
     @Log(title = "业务数据文件搬运", businessType = BusinessType.INSERT)
     public AjaxResult transportDDataFile(@RequestBody DdataInfo ddataInfo)
