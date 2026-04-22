@@ -14,6 +14,8 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +35,8 @@ import java.util.stream.Stream;
 @Service
 public class DExperimentInfoServiceImpl implements IDExperimentInfoService
 {
+    private static final Logger log = LoggerFactory.getLogger(DExperimentInfoServiceImpl.class);
+
     @Autowired
     private DExperimentInfoMapper dExperimentInfoMapper;
 
@@ -180,6 +184,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
                 }
 
                 dExperimentInfo.setPath("/" + pathStr);
+                log.info("新增试验信息, experimentName={}, projectId={}", dExperimentInfo.getExperimentName(), dExperimentInfo.getProjectId());
                 return dExperimentInfoMapper.insertDExperimentInfo(dExperimentInfo);
             }
         }
@@ -237,6 +242,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
 
         redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
         redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId);
+        log.info("更新试验信息, experimentId={}", experimentId);
         return dExperimentInfoMapper.updateDExperimentInfo(dExperimentInfo);
     }
 
@@ -313,6 +319,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
                 deleteExperimentIds.add(experimentInfo.getExperimentId());
                 redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentInfo.getExperimentId());
                 redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentInfo.getExperimentId());
+                log.info("删除试验信息, experimentId={}", experimentInfo.getExperimentId());
             }
         }
 
@@ -363,6 +370,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
 
             redisCache.deleteObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId);
             redisCache.deleteObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId);
+            log.info("删除试验信息, experimentId={}", experimentId);
             return dExperimentInfoMapper.deleteDExperimentInfoByExperimentId(experimentId);
         }
     }
