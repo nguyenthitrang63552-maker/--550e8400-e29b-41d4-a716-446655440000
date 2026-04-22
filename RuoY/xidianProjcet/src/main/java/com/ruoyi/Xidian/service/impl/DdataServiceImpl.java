@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -340,7 +341,7 @@ public class DdataServiceImpl implements IDdataService
 
         DdataInfo result = records.get(0);
         result.setFullPath("./data" + BuildDataFilePath(result) + result.getDataFilePath());
-        redisCache.setCacheObject(cacheKey, result);
+        redisCache.setCacheObject(cacheKey, result, 30, TimeUnit.MINUTES);
         return result;
     }
     @Override
@@ -1576,7 +1577,7 @@ public class DdataServiceImpl implements IDdataService
         String suffix = extractSuffix(normalizedOriginalPath);
         return buildDataFilePath("/", baseName ,suffix);
     }
-
+    //数据文件防止重复代码
     private String resolveAvailableExperimentStoragePath(String experimentId, Path experimentRoot, String storagePath)
     {
         String normalizedStoragePath = normalizeDataFilePath(storagePath);

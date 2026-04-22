@@ -1,6 +1,7 @@
 package com.ruoyi.Xidian.service.impl;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.core.redis.RedisCache;
@@ -46,7 +47,7 @@ public class DTargetInfoServiceImpl implements IDTargetInfoService
 
         // 将查询结果缓存到Redis中
         if (dTargetInfo != null) {
-            redisCache.setCacheObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId, dTargetInfo);
+            redisCache.setCacheObject(CacheConstants.EXPERIMENT_TARGET_KEY + targetId, dTargetInfo, 30, TimeUnit.MINUTES);
         }
 
         return dTargetInfo;

@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 @Service
@@ -112,7 +113,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
         DExperimentInfo dExperimentInfo = dExperimentInfoMapper.selectDExperimentInfoByExperimentId(experimentId);
         if (dExperimentInfo != null)
         {
-            redisCache.setCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId, dExperimentInfo);
+            redisCache.setCacheObject(CacheConstants.EXPERIMENT_INFO_KEY + experimentId, dExperimentInfo, 30, TimeUnit.MINUTES);
             dExperimentInfo.setFullPath(getFrontEndExperimentPath(experimentId));
         }
         return dExperimentInfo;
@@ -463,7 +464,7 @@ public class DExperimentInfoServiceImpl implements IDExperimentInfoService
             return redisCache.getCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId).toString();
         }
         String relativePath = getExperimentRelativePath(experimentId);
-        redisCache.setCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId, profile + relativePath);
+        redisCache.setCacheObject(CacheConstants.EXPERIMENT_PATH_KEY + experimentId, profile + relativePath, 30, TimeUnit.MINUTES);
         return profile + relativePath;
     }
 

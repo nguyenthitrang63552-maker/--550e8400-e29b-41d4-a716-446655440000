@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 @Service
@@ -45,7 +46,7 @@ public class DProjectInfoServiceImpl implements IDProjectInfoService
         }
         DProjectInfo projectInfo = dProjectInfoMapper.selectDProjectInfoByProjectId(projectId);
         projectInfo.setFullPath("./data" + projectInfo.getPath());
-        redisCache.setCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId, projectInfo);
+        redisCache.setCacheObject(CacheConstants.PROJECT_INFO_KEY + projectId, projectInfo, 30, TimeUnit.MINUTES);
         return projectInfo;
     }
 
